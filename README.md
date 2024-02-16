@@ -8,6 +8,9 @@ Solana Code Coverage CLI Tool
 git clone https://github.com/LimeChain/solcov
 cd solcov
 
+# Install a nightly version of the compiler (needed to compile with profiling info)
+rustup install nightly
+
 # To run the coverage checks on the provided example
 cargo run -- --path ./examples/setter
 
