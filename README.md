@@ -1,14 +1,12 @@
 # solcov
-Limechain Solana Code Coverage CLI
+Solana Code Coverage CLI Tool
 
-This CLI is roughly based on [this script](https://github.com/solana-labs/solana-program-library/blob/4eb50ed57111dde77c1460778966b7fe559f1513/coverage.sh) but with `grcov` brought in as a `rust` dependency, instead of depending on it existing as an external `cli` tool.
+# Installtion & Usage
+1. Clone the repo
+2. ```cargo install```
+3. ```solcov path/to/solana/program/with/rust/tests```
 
-# Running
-
-You can directly run the binary using
-
-```bash
+One can run the binary directly by
+```
 cargo run -- --path path/to/solana/program/with/rust/tests
 ```
-
-Or `cargo install` it first and then run it as `solcov path/to/solana/program/with/rust/tests`
