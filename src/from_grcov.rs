@@ -294,8 +294,6 @@ pub struct Opt {
 }
 
 pub fn main(opt: Opt) {
-    dbg!(&opt.path_mapping, &opt.paths, &opt.llvm, &opt.prefix_dir);
-
     if let Some(path) = opt.llvm_path {
         LLVM_PATH.set(path).unwrap();
     }
@@ -304,8 +302,6 @@ pub fn main(opt: Opt) {
         Filter::Covered => true,
         Filter::Uncovered => false,
     });
-
-    dbg!(filter_option);
 
     let stdout = Path::new("stdout");
     let stderr = Path::new("stderr");
@@ -503,8 +499,6 @@ pub fn main(opt: Opt) {
         },
     };
 
-    dbg!(&opt.sort_output_types);
-
     for output_type in &output_types {
         let output_path = output_type.to_file_name(output_path);
         let results = if opt.sort_output_types.contains(output_type) {
@@ -518,9 +512,6 @@ pub fn main(opt: Opt) {
         } else {
             &iterator
         };
-
-        dbg!(&output_path, &output_type, &num_threads, &opt.branch, &opt.output_config_file, &opt.precision);
-        // dbg!(results);
 
         match output_type {
             OutputType::Ade => output_activedata_etl(results, output_path.as_deref(), demangle),
