@@ -37,7 +37,7 @@ fn main() -> Result<()> {
 
     // NOTE: prepare TARGET_DIR
     {
-        let res = fs::create_dir(TARGET_DIR);
+        let res = fs::create_dir_all(TARGET_DIR);
 
         match res {
             Ok(_) => {}
