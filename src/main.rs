@@ -18,17 +18,23 @@ mod util;
 #[derive(Parser)]
 #[command(version, about)]
 struct Cli {
-    #[arg(long)]
+    #[arg(long, default_value = ".", help = "Path to the solana project")]
     path: PathBuf,
+
+    #[arg(
+        long,
+        default_value = "nightly",
+        help = "Version of the compiler to use. Has to support `-Zprofile` (for now that's nightly only)"
+    )]
+    compiler_version: String,
 }
 
 fn main() -> Result<()> {
     #[rustfmt::skip]
     let Cli {
         path,
+        compiler_version,
     } = Cli::try_parse()?;
-
-    // TODO: check grcov binary validity (existance and version)
 
     // TODO: use Path{,Buf}
     const TARGET_DIR: &str = "./target/coverage";
@@ -55,7 +61,12 @@ fn main() -> Result<()> {
     let before_tests_time = SystemTime::now();
     {
         let mut cmd = Command::new("cargo")
-            .args(["+nightly", "test", "--target-dir", TARGET_DIR])
+            .args([
+                &format!("+{}", compiler_version),
+                "test",
+                "--target-dir",
+                TARGET_DIR,
+            ])
             .envs(HashMap::from([
                 // TODO: inherit old `${RUSTFLAGS}`
                 ("RUSTFLAGS", "-Zprofile"),
