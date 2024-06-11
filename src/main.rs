@@ -8,7 +8,7 @@ use std::{
     time::SystemTime,
 };
 
-use anyhow::{bail, Context, Result};
+use eyre::{bail, Context, Result};
 use chrono::Local;
 use clap::Parser;
 

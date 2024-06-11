@@ -1,4 +1,4 @@
-use anyhow::{Context, Result};
+use eyre::{Context, Result};
 use std::{fs, os::unix, path::Path};
 
 #[rustfmt::skip]
