@@ -36,11 +36,11 @@ async fn test_program() {
         .is_none());
 
     // Set first message
-    set_text(&mut context, &steve, text_pda_steve, steve_text.to_string())
-        .await
-        .unwrap();
-
     {
+        set_text(&mut context, &steve, text_pda_steve, steve_text.to_string())
+            .await
+            .unwrap();
+
         let steve_text_expected = context
             .banks_client
             .get_account(text_pda_steve)
@@ -54,11 +54,11 @@ async fn test_program() {
     }
 
     // Set second message
-    set_text(&mut context, &ivan, text_pda_ivan, ivan_text.to_string())
-        .await
-        .unwrap();
-
     {
+        set_text(&mut context, &ivan, text_pda_ivan, ivan_text.to_string())
+            .await
+            .unwrap();
+
         let ivan_text_expected = context
             .banks_client
             .get_account(text_pda_ivan)
@@ -69,6 +69,12 @@ async fn test_program() {
         let text_data =
             setter::SetterState::try_deserialize(&mut ivan_text_expected.data.as_ref()).unwrap();
         assert_eq!(text_data.text, ivan_text);
+    }
+
+    // Set second message again
+    {
+        let res = set_text(&mut context, &ivan, text_pda_ivan, "Error".to_string()).await;
+        assert!(res.is_err());
     }
 }
 

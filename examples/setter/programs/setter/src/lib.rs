@@ -36,7 +36,21 @@ pub mod coverage {
     #[allow(unused_variables)] // `message_seed` used in `init` of `SendDirectMessage`
     pub fn set_context(ctx: Context<SetContext>, text: String) -> Result<()> {
         let text_pda = &mut ctx.accounts.text_pda;
-        text_pda.text = text;
+
+        if text.contains("Error") {
+            return Err(anchor_lang::solana_program::program_error::ProgramError::Custom(123).into());
+        }
+
+        #[allow(clippy::if_same_then_else)]
+        if text.is_empty() {
+            text_pda.text = "Default message".to_string();
+        } else if false {
+            text_pda.text = text;
+        } else if true {
+            text_pda.text = text;
+        } else {
+            text_pda.text = text;
+        }
 
         Ok(())
     }

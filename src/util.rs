@@ -38,3 +38,11 @@ pub fn symlink(target: impl AsRef<Path>, link: impl AsRef<Path>) -> Result<()> {
     unix::fs::symlink(target, link)
         .with_context(|| format!("Error creating symbolic link for {}", target.display()))
 }
+
+pub fn to_option<A>(predicate: bool, value: A) -> Option<A> {
+    if predicate {
+        Some(value)
+    } else {
+        None
+    }
+}

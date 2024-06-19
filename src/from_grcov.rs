@@ -294,6 +294,8 @@ pub struct Opt {
 }
 
 pub fn main(opt: Opt) {
+    // dbg!(&opt.path_mapping, &opt.paths, &opt.llvm, &opt.prefix_dir);
+
     if let Some(path) = opt.llvm_path {
         LLVM_PATH.set(path).unwrap();
     }
