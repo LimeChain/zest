@@ -1,5 +1,5 @@
 use eyre::{Context, Result};
-use std::{fs, os::unix, path::Path};
+use std::{env, fs, os::unix, path::Path, process::Command};
 
 #[rustfmt::skip]
 pub fn remove_contents(path: impl AsRef<Path>) -> Result<()> {
@@ -45,4 +45,20 @@ pub fn to_option<A>(predicate: bool, value: A) -> Option<A> {
     } else {
         None
     }
+}
+
+pub fn is_rustup_managed() -> bool {
+    // Check if the `RUSTUP_HOME` or `CARGO_HOME` environment variables are set
+    if env::var("RUSTUP_HOME").is_ok() || env::var("CARGO_HOME").is_ok() {
+        return true;
+    }
+
+    // Check if the `rustup` command is available
+    if let Ok(output) = Command::new("rustup").arg("--version").output() {
+        if output.status.success() {
+            return true;
+        }
+    }
+
+    false
 }

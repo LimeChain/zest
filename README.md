@@ -14,7 +14,10 @@ cd solcov
 rustup component add llvm-tools-preview
 
 # To run the coverage checks on the provided example
-cargo run --release -- --path ./examples/setter
+## With `-C instrument-coverage` (default, works on stable)
+cargo run --release -- --path ./examples/setter --coverage-strategy instrument-coverage
+## With `-Zprofile` (required nightly)
+cargo run --release -- --path ./examples/setter --coverage-strategy z-profile
 
 # To install globally as `solcov`
 cargo install --path .
@@ -24,7 +27,8 @@ solcov --path ./examples/setter
 ## Branch coverage
 
 > [!NOTE]
-> branch coverage can be enabled with the `--branch` flag but it requires a recent enough version of the nightly compiler to work
+> Branch coverage can be enabled with the `--branch` flag but it requires a recent enough version of the nightly compiler to work
+> It is also only supported when using the `instrument-coverage` coverage strategy
 
 <details>
   <summary>There isn't yet a version of the compiler that both supports `branch` coverage and `solana-program` compilation</summary>

@@ -4,18 +4,18 @@ use std::{
     collections::HashMap,
     env, fs, io,
     path::{Path, PathBuf},
-    process::{Command, ExitStatus},
+    process::{Command, ExitStatus, Stdio},
     time::SystemTime,
 };
 
 use chrono::Local;
-use clap::Parser;
+use clap::{Parser, ValueEnum};
 use eyre::{bail, Context, OptionExt, Result};
 
 mod from_grcov;
 mod util;
 
-#[derive(Parser)]
+#[derive(Debug, Parser)]
 #[command(version, about)]
 struct Cli {
     #[arg(long, default_value = ".", help = "Path to the solana project")]
@@ -34,6 +34,21 @@ struct Cli {
         help = "Whether to enable branch coverage (nightly compiler required)"
     )]
     branch: bool,
+
+    #[arg(
+        long,
+        value_enum,
+        default_value_t = CoverageStrategy::InstrumentCoverage,
+        help = "Coverage strategy to use",
+    )]
+    coverage_strategy: CoverageStrategy,
+}
+
+#[derive(Debug, Copy, Clone, ValueEnum)]
+enum CoverageStrategy {
+    InstrumentCoverage,
+    // BUG: does not currently work
+    ZProfile,
 }
 
 fn main() -> Result<()> {
@@ -41,19 +56,32 @@ fn main() -> Result<()> {
         path,
         compiler_version,
         branch,
+        coverage_strategy,
     } = Cli::try_parse()?;
 
     // Check the conditions after parsing
     let is_nightly: bool = compiler_version
         .as_ref()
-        .map(|v| !v.contains("nightly"))
+        .map(|v| v.contains("nightly"))
         .unwrap_or(true);
-    if branch && is_nightly {
-        eprintln!("Error: The --branch option requires the compiler_version to be 'nightly'.");
+
+    if compiler_version.is_some() && !util::is_rustup_managed() {
+        eprintln!("Error: specifying the `compiler_version` requires usage of a `rustup`-managed Rust installation");
+        std::process::exit(1);
+    }
+    if matches!(coverage_strategy, CoverageStrategy::ZProfile) && !is_nightly {
+        eprintln!(
+            "Error: The `-Z profile` strategy requires the `compiler_version` to be 'nightly'"
+        );
+        std::process::exit(1);
+    }
+    if branch && !is_nightly {
+        eprintln!("Error: The --branch option requires the `compiler_version` to be 'nightly'.");
         std::process::exit(1);
     }
 
-    env::set_current_dir(path.clone())?;
+    env::set_current_dir(&path)
+        .with_context(|| format!("Could not `cd` to `{}`", path.display()))?;
 
     let target_dir = "./target";
     let coverage_dir = "./target/coverage";
@@ -74,6 +102,7 @@ fn main() -> Result<()> {
         }
 
         // Clean old `profraw` files
+        // TODO: test if works
         fs::read_dir(coverage_dir)?
             .collect::<Result<Vec<_>, _>>()?
             .iter()
@@ -93,27 +122,36 @@ fn main() -> Result<()> {
         ),
     );
 
+    // NOTE: set compiler env vars
     {
         // TODO: inherit old `${RUSTFLAGS}`
-        let mut rustflags = "-C instrument-coverage".to_string();
+        match coverage_strategy {
+            CoverageStrategy::InstrumentCoverage => {
+                let mut rustflags = "-C instrument-coverage".to_string();
 
-        if branch {
-            rustflags.push_str(" -Z coverage-options=mcdc");
+                if branch {
+                    rustflags.push_str(" -Z coverage-options=mcdc");
+                }
+
+                env::set_var("RUSTFLAGS", rustflags);
+            }
+            CoverageStrategy::ZProfile => {
+                // NOTE: "can't instrument with gcov profiling when compiling incrementally"
+                env::set_var("CARGO_INCREMENTAL", "0");
+                env::set_var("RUSTFLAGS", "-Z profile");
+            }
         }
 
-        env::set_var("RUSTFLAGS", rustflags);
+        env::set_var("RUST_BACKTRACE", "1");
+        env::set_var("RUST_MIN_STACK", "8388608");
     }
 
     // Build
     {
         let mut cmd = Command::new("cargo")
-            .args(compiler_version.clone().map(|v| format!("+{}", v)))
-            .args(["build", "--target-dir", target_dir])
-            .envs(HashMap::from([
-                ("CARGO_INCREMENTAL", "0"),
-                ("RUST_BACKTRACE", "1"),
-                ("RUST_MIN_STACK", "8388608"),
-            ]))
+            .args(compiler_version.as_ref().map(|v| format!("+{}", v)))
+            .args(["build", "--tests", "--target-dir", target_dir])
+            .stderr(Stdio::piped())
             .spawn()?;
 
         let output = cmd.wait_with_output()?;
@@ -129,13 +167,9 @@ fn main() -> Result<()> {
     let before_tests_time = SystemTime::now();
     {
         let mut cmd = Command::new("cargo")
-            .args(compiler_version.map(|v| format!("+{}", v)))
+            .args(compiler_version.as_ref().map(|v| format!("+{}", v)))
             .args(["test", "--target-dir", target_dir])
-            .envs(HashMap::from([
-                ("CARGO_INCREMENTAL", "0"),
-                ("RUST_BACKTRACE", "1"),
-                ("RUST_MIN_STACK", "8388608"),
-            ]))
+            .stderr(Stdio::piped())
             .spawn()?;
 
         let output = cmd.wait_with_output()?;
@@ -157,13 +191,15 @@ fn main() -> Result<()> {
             r#"(?x)
             ^\#\[(program|account)\]$      # Matches #[program] or #[account]
             |
+            ^\#\[(tokio::)?test\]$         # Matches #[test] or #[tokio::test]
+            |
             ^\#\[derive\(\s*[^\)]+\s*\)\]$ # Matches #[derive(Trait, ...)]
             |
             ^declare_id!\(\s*.*\s*\);$     # Matches declare_id!(...)
-            |
-            ^\s*$                          # Matches "empty" lines
-            |
-            ^\s*[\(\)\[\]\{\}]*\s*$        # Matches lines with only brackets
+            # |
+            # ^\s*$                          # Matches "empty" lines
+            # |
+            # ^\s*[\(\)\[\]\{\}]*\s*$        # Matches lines with only brackets
         "#,
         )?;
 
@@ -175,9 +211,11 @@ fn main() -> Result<()> {
             output_types: vec![from_grcov::OutputType::Html],
             output_path: Some(coverage_dir.into()),
             output_config_file: None,
+            // NOTE: `.` because we `cd`-ed into the correct directory already
             source_dir: Some(".".into()),
             prefix_dir: None,
             ignore_not_existing: true,
+            // BUG: does not filter out correctly (yet)
             ignore_dir: vec!["tests".to_string(), "target".to_string()], // format!("{}/tests", path.display())],
             keep_dir: vec![],
             path_mapping: None,
@@ -212,6 +250,7 @@ fn main() -> Result<()> {
     }
 
     // NOTE: experimentation with `tarpaulin` as a backend
+    //       `branch_coverage` is stubbed, not useful to us
     // {
     //     // `cargo tarpaulin --skip-clean --out Html --engine Llvm --output-dir target/coverage`
     //     let mut config: tarpaulin::config::Config = Default::default();
@@ -228,8 +267,9 @@ fn main() -> Result<()> {
     // }
 
     // NOTE: run grcov (old way, through CLI)
+    //       depends on CLI, tradeoffs
     // {
-    //     // grcov program/coverage --llvm -t html -o program/coverage
+    //     // grcov program/coverage --llvm -t html -o target/coverage
     //     let mut cmd = Command::new("grcov")
     //         .args([program_DIR, "--llvm", "-t", "html", "-o", program_DIR])
     //         .spawn()?;
