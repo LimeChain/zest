@@ -16,13 +16,17 @@ rustup component add llvm-tools-preview
 # To run the coverage checks on the provided example
 ## With `-C instrument-coverage` (default, works on stable)
 cargo run --release -- --path ./examples/setter --coverage-strategy instrument-coverage
-## With `-Zprofile` (required nightly)
+## With `-Zprofile` (required nightly) (currently broken, prefer `instrument-coverage`)
 cargo run --release -- --path ./examples/setter --coverage-strategy z-profile
 
 # To install globally as `solcov`
 cargo install --path .
 solcov --path ./examples/setter
 ```
+
+## Demo screenshot
+
+![image](https://github.com/user-attachments/assets/e2cc4dd9-e288-43f3-8378-a935496c2821)
 
 ## Branch coverage
 
