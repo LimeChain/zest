@@ -1,38 +1,53 @@
 # solcov
 Solana Code Coverage CLI Tool
 
-## Installtion & Usage
-
-```bash
-# Install 
-
-# Clone repo
-git clone https://github.com/LimeChain/solcov
-cd solcov
-
-# Install the llvm-tools rustup component (needed for getting the profiling info on stable)
-rustup component add llvm-tools-preview
-
-# To run the coverage checks on the provided example
-## With `-C instrument-coverage` (default, works on stable)
-cargo run --release -- --path ./examples/setter --coverage-strategy instrument-coverage
-## With `-Zprofile` (required nightly) (currently broken, prefer `instrument-coverage`)
-cargo run --release -- --path ./examples/setter --coverage-strategy z-profile
-
-# To install globally as `solcov`
-cargo install --path .
-solcov --path ./examples/setter
-```
-
 ## Demo screenshot
 
 ![image](https://github.com/user-attachments/assets/e2cc4dd9-e288-43f3-8378-a935496c2821)
 
+## Installtion
+
+```bash
+# Clone repo
+git clone https://github.com/LimeChain/solcov
+cd solcov
+
+# Install the llvm-tools rustup component (needed for getting the profiling info on stable, i.e. when using the `instrument-coverage` strategy)
+rustup component add llvm-tools-preview
+
+# Install globally as `solcov`
+cargo install --path .
+```
+
+## Usage
+
+```bash
+# Move into the target project
+cd ./examples/setter
+# This will run the example using the `instrument-coverage` strategy without `branch` info
+solcov
+
+# Path to the target project can also be specified using the `--path` option
+solcov --path ./examples/setter
+
+# To run the coverage checks on the provided example
+## With `-C instrument-coverage` (default, can be omitted, works on stable)
+solcov --coverage-strategy instrument-coverage
+## With `-Zprofile` (requires nightly) (currently broken, prefer `instrument-coverage`)
+solcov --coverage-strategy z-profile
+```
+
+> [!NOTE]
+> Check `solcov --help` for more info
+
+> [!NOTE]
+> More info on the different strategies can be found [here](https://doc.rust-lang.org/beta/rustc/instrument-coverage.html)
+
 ## Branch coverage
 
 > [!NOTE]
-> Branch coverage can be enabled with the `--branch` flag but it requires a recent enough version of the nightly compiler to work
-> It is also only supported when using the `instrument-coverage` coverage strategy
+> Branch coverage can be enabled with the `--branch` flag but it requires a recent enough version of the nightly compiler to work.
+> It is also only supported when using the `instrument-coverage` coverage strategy.
 
 <details>
   <summary>There isn't yet a version of the compiler that both supports `branch` coverage and `solana-program` compilation</summary>
