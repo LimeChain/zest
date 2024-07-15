@@ -114,6 +114,7 @@ fn main() -> Result<()> {
             .try_for_each(fs::remove_file)?;
     }
 
+    // TODO: only for `CoverageStrategy::InstrumentCoverage`
     env::set_var(
         "LLVM_PROFILE_FILE",
         format!(
@@ -189,13 +190,13 @@ fn main() -> Result<()> {
         // NOTE: for filtering out "irrelevant" lines, i.e. only leaving the contract code
         let re = regex::Regex::new(
             r#"(?x)
-            ^\#\[(program|account)\]$      # Matches #[program] or #[account]
+            ^\s*\#\[(program|account)\]$      # Matches #[program] or #[account]
             |
-            ^\#\[(tokio::)?test\]$         # Matches #[test] or #[tokio::test]
+            ^\s*\#\[(tokio::)?test\]$         # Matches #[test] or #[tokio::test]
             |
-            ^\#\[derive\(\s*[^\)]+\s*\)\]$ # Matches #[derive(Trait, ...)]
+            ^\s*\#\[derive\(\s*[^\)]+\s*\)\]$ # Matches #[derive(Trait, ...)]
             |
-            ^declare_id!\(\s*.*\s*\);$     # Matches declare_id!(...)
+            ^\s*declare_id!\(\s*.*\s*\);$     # Matches declare_id!(...)
             # |
             # ^\s*$                          # Matches "empty" lines
             # |
@@ -215,12 +216,12 @@ fn main() -> Result<()> {
             source_dir: Some(".".into()),
             prefix_dir: None,
             ignore_not_existing: true,
-            // BUG: does not filter out correctly (yet)
-            ignore_dir: vec!["tests".to_string(), "target".to_string()], // format!("{}/tests", path.display())],
+            // NOTE: parsed as globs, see [globset::Globset]
+            ignore_dir: vec!["target/*".to_string()],
             keep_dir: vec![],
             path_mapping: None,
             branch,
-            filter: Some(from_grcov::Filter::Covered),
+            filter: None,
             sort_output_types: vec![from_grcov::OutputType::Html],
             llvm: true,
             token: None,
