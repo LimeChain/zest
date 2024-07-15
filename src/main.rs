@@ -42,6 +42,10 @@ struct Cli {
         help = "Coverage strategy to use",
     )]
     coverage_strategy: CoverageStrategy,
+
+    // TODO: `-- --exact`?
+    #[arg(long, help = "Which tests to run (same as `cargo test`)")]
+    tests: Option<String>,
 }
 
 #[derive(Debug, Copy, Clone, ValueEnum)]
@@ -57,6 +61,7 @@ fn main() -> Result<()> {
         compiler_version,
         branch,
         coverage_strategy,
+        tests,
     } = Cli::try_parse()?;
 
     // Check the conditions after parsing
@@ -169,7 +174,10 @@ fn main() -> Result<()> {
     {
         let mut cmd = Command::new("cargo")
             .args(compiler_version.as_ref().map(|v| format!("+{}", v)))
-            .args(["test", "--target-dir", target_dir])
+            .arg("test")
+            // NOTE: no filter is passed if `None`
+            .args(tests)
+            .args(["--target-dir", target_dir])
             .stderr(Stdio::piped())
             .spawn()?;
 
