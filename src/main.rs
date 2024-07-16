@@ -46,9 +46,27 @@ struct Cli {
     // TODO: `-- --exact`?
     #[arg(long, help = "Which tests to run (same as `cargo test`)")]
     tests: Option<String>,
+
+    #[arg(long, value_enum, default_value_t = OutputType::Html, help = "Output type of coverage")]
+    output_type: OutputType,
 }
 
-#[derive(Debug, Copy, Clone, ValueEnum)]
+#[derive(Debug, Clone, Copy, ValueEnum)]
+enum OutputType {
+    Html,
+    Lcov,
+}
+
+impl From<OutputType> for from_grcov::OutputType {
+    fn from(value: OutputType) -> Self {
+        match value {
+            OutputType::Html => Self::Html,
+            OutputType::Lcov => Self::Lcov,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, ValueEnum)]
 enum CoverageStrategy {
     InstrumentCoverage,
     // BUG: does not currently work
@@ -62,6 +80,7 @@ fn main() -> Result<()> {
         branch,
         coverage_strategy,
         tests,
+        output_type,
     } = Cli::try_parse()?;
 
     // Check the conditions after parsing
@@ -217,7 +236,7 @@ fn main() -> Result<()> {
             paths: vec![coverage_dir.to_string()],
             binary_path: Some(target_dir.into()),
             llvm_path: None,
-            output_types: vec![from_grcov::OutputType::Html],
+            output_types: vec![output_type.into()],
             output_path: Some(coverage_dir.into()),
             output_config_file: None,
             // NOTE: `.` because we `cd`-ed into the correct directory already
@@ -230,6 +249,7 @@ fn main() -> Result<()> {
             path_mapping: None,
             branch,
             filter: None,
+            // NOTE: only sorting for `Html`, `LCov` users can sort themselves
             sort_output_types: vec![from_grcov::OutputType::Html],
             llvm: true,
             token: None,
@@ -287,9 +307,16 @@ fn main() -> Result<()> {
     // }
 
     // NOTE: open resulting report
-    eprintln!("Successfully generated report, opening...");
-    // open::that("./target/coverage/tarpaulin-report.html")?;
-    open::that("./target/coverage/html/index.html")?;
+    match output_type {
+        OutputType::Html => {
+            eprintln!("Successfully generated html report at {}/target/coverage/html/index.html, opening...", path.display());
+            // open::that("./target/coverage/tarpaulin-report.html")?;
+            open::that("./target/coverage/html/index.html")?;
+        }
+        OutputType::Lcov => {
+            eprintln!("Successfully generated lcov report, you can find it at {}/target/coverage/lcov", path.display());
+        }
+    }
 
     Ok(())
 }
