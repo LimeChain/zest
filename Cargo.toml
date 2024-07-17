@@ -4,8 +4,18 @@ version = "0.1.0"
 authors = ["Pavel Atanasov <pavel.atanasov@limechain.tech"]
 edition = "2021"
 
+[[bin]]
+name = "solcov"
+path = "./src/main.rs"
+
+[lib]
+name = "solcov"
+path = "./src/lib.rs"
+
 [dependencies]
 clap = { version = "4.5.0", features = ["derive"] }
+confy = "0.6.1"
+serde = { version = "1.0", features = ["derive"] }
 eyre = "0.6.12"
 open = "5.0.1"
 chrono = { version = "0.4.34", features = ["serde"] }
@@ -32,7 +42,7 @@ rayon = "1.8"
 regex = "1.10"
 rustc-hash = "1.1"
 semver = "1.0"
-serde = { version = "1.0", features = ["derive"] }
+# serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 simplelog = "0.12"
 smallvec = "1.11"

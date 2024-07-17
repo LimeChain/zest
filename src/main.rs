@@ -2,86 +2,26 @@
 
 use std::{
     collections::HashMap,
-    env, fs, io,
+    default, env, fs, io,
     path::{Path, PathBuf},
     process::{Command, ExitStatus, Stdio},
     time::SystemTime,
 };
 
 use chrono::Local;
-use clap::{Parser, ValueEnum};
 use eyre::{bail, Context, OptionExt, Result};
 
-mod from_grcov;
-mod util;
-
-#[derive(Debug, Parser)]
-#[command(version, about)]
-struct Cli {
-    #[arg(long, default_value = ".", help = "Path to the solana project")]
-    path: PathBuf,
-
-    #[arg(
-        long,
-        // default_value = "stable",
-        help = "Version of the compiler to use. Nightly required for branch coverage",
-    )]
-    compiler_version: Option<String>,
-
-    #[arg(
-        long,
-        default_value_t = false,
-        help = "Whether to enable branch coverage (nightly compiler required)"
-    )]
-    branch: bool,
-
-    #[arg(
-        long,
-        value_enum,
-        default_value_t = CoverageStrategy::InstrumentCoverage,
-        help = "Coverage strategy to use",
-    )]
-    coverage_strategy: CoverageStrategy,
-
-    // TODO: `-- --exact`?
-    #[arg(long, help = "Which tests to run (same as `cargo test`)")]
-    tests: Option<String>,
-
-    #[arg(long, value_enum, default_value_t = OutputType::Html, help = "Output type of coverage")]
-    output_type: OutputType,
-}
-
-#[derive(Debug, Clone, Copy, ValueEnum)]
-enum OutputType {
-    Html,
-    Lcov,
-}
-
-impl From<OutputType> for from_grcov::OutputType {
-    fn from(value: OutputType) -> Self {
-        match value {
-            OutputType::Html => Self::Html,
-            OutputType::Lcov => Self::Lcov,
-        }
-    }
-}
-
-#[derive(Debug, Clone, Copy, ValueEnum)]
-enum CoverageStrategy {
-    InstrumentCoverage,
-    // BUG: does not currently work
-    ZProfile,
-}
+use solcov::{from_grcov, util, Args, CoverageStrategy, OutputType};
 
 fn main() -> Result<()> {
-    let Cli {
+    let Args {
         path,
         compiler_version,
         branch,
         coverage_strategy,
         tests,
         output_type,
-    } = Cli::try_parse()?;
+    } = Args::parse_from_config_and_cli()?;
 
     // Check the conditions after parsing
     let is_nightly: bool = compiler_version
@@ -244,7 +184,7 @@ fn main() -> Result<()> {
             prefix_dir: None,
             ignore_not_existing: true,
             // NOTE: parsed as globs, see [globset::Globset]
-            ignore_dir: vec!["target/*".to_string()],
+            ignore_dir: vec!["target/*".to_string(), "*tests*".to_string()],
             keep_dir: vec![],
             path_mapping: None,
             branch,
@@ -314,7 +254,10 @@ fn main() -> Result<()> {
             open::that("./target/coverage/html/index.html")?;
         }
         OutputType::Lcov => {
-            eprintln!("Successfully generated lcov report, you can find it at {}/target/coverage/lcov", path.display());
+            eprintln!(
+                "Successfully generated lcov report, you can find it at {}/target/coverage/lcov",
+                path.display()
+            );
         }
     }
 
