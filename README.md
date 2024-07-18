@@ -30,11 +30,17 @@ solcov
 # Path to the target project can also be specified using the `--path` option
 solcov --path ./examples/setter
 
-# To run the coverage checks on the provided example
-## With `-C instrument-coverage` (default, can be omitted, works on stable)
-solcov --coverage-strategy instrument-coverage
-## With `-Zprofile` (requires nightly) (currently broken, prefer `instrument-coverage`)
-solcov --coverage-strategy z-profile
+# Configuration options can also be read from a (TOML) config file (`solcov.toml` by default)
+cat <<TOML > my_solcov_config.toml
+path = "./examples/setter"
+branch = true
+TOML
+
+# With would run with
+#  `coverage_strategy` being `instrument-coverage` (Default)
+#               `path` being `./examples/setter`   (from config file)
+#             `branch` being `false`               (CLI override)
+solcov --config ./my_solcov_config.toml --branch false
 ```
 
 > [!NOTE]
@@ -47,7 +53,7 @@ solcov --coverage-strategy z-profile
 
 > [!NOTE]
 > Branch coverage can be enabled with the `--branch` flag but it requires a recent enough version of the nightly compiler to work.
-> It is also only supported when using the `instrument-coverage` coverage strategy.
+> It is also only supported when using the `instrument-coverage` coverage strategy (default).
 
 <details>
   <summary>There isn't yet a version of the compiler that both supports `branch` coverage and `solana-program` compilation</summary>
