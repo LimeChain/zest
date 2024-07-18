@@ -2,26 +2,34 @@
 
 use std::{
     collections::HashMap,
-    default, env, fs, io,
+    default, env,
+    fs::{self, File},
+    io::{self, BufReader, Read},
     path::{Path, PathBuf},
     process::{Command, ExitStatus, Stdio},
     time::SystemTime,
 };
 
 use chrono::Local;
+use clap_serde_derive::ClapSerde;
 use eyre::{bail, Context, OptionExt, Result};
 
-use solcov::{from_grcov, util, Args, CoverageStrategy, OutputType};
+use solcov::{from_grcov, util, Config, CoverageStrategy, OutputType};
 
 fn main() -> Result<()> {
-    let Args {
+    // {
+    //     dbg!(Config::parse());
+    //     return Ok(());
+    // }
+
+    let Config {
         path,
         compiler_version,
         branch,
         coverage_strategy,
         tests,
         output_type,
-    } = Args::parse_from_config_and_cli()?;
+    } = Config::parse()?;
 
     // Check the conditions after parsing
     let is_nightly: bool = compiler_version
