@@ -19,6 +19,7 @@ toml = "0.8.15"
 clap-serde-derive = "0.2.1"
 eyre = "0.6.12"
 open = "5.0.1"
+spinners = "4.1.1"
 chrono = { version = "0.4.34", features = ["serde"] }
 grcov = "0.8.19"
 # tarpaulin = { package = "cargo-tarpaulin", version = "0.30.0" }

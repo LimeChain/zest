@@ -13,6 +13,7 @@ use std::{
 use chrono::Local;
 use clap_serde_derive::ClapSerde;
 use eyre::{bail, Context, OptionExt, Result};
+use spinners::{Spinner, Spinners};
 
 use solcov::{from_grcov, util, Config, CoverageStrategy, OutputType};
 
@@ -120,41 +121,53 @@ fn main() -> Result<()> {
     }
 
     // Build
+    // TODO: limited output
     {
+        let mut spinner = Spinner::new(Spinners::Dots, "Building the project...".to_string());
         let mut cmd = Command::new("cargo")
             .args(compiler_version.as_ref().map(|v| format!("+{}", v)))
             .args(["build", "--tests", "--target-dir", target_dir])
+            .stdout(Stdio::piped())
             .stderr(Stdio::piped())
             .spawn()?;
 
         let output = cmd.wait_with_output()?;
         if !output.status.success() {
-            bail!(
-                "`cargo build` failed: {}",
-                std::str::from_utf8(&output.stderr)?
-            );
+            spinner.stop_and_persist("❌", "Build failed!".to_string());
+            eprintln!("cargo build stdout:");
+            eprintln!("{}", std::str::from_utf8(&output.stdout)?);
+            eprintln!("cargo build stderr:");
+            eprintln!("{}", std::str::from_utf8(&output.stderr)?);
+            bail!("`cargo build` failed");
         }
+        spinner.stop_and_persist("✅", "Project built!".to_string());
     }
 
     // Test
+    // TODO: limited output
     let before_tests_time = SystemTime::now();
     {
+        let mut spinner = Spinner::new(Spinners::Dots, "Running the tests...".to_string());
         let mut cmd = Command::new("cargo")
             .args(compiler_version.as_ref().map(|v| format!("+{}", v)))
             .arg("test")
             // NOTE: no filter is passed if `None`
             .args(tests)
             .args(["--target-dir", target_dir])
+            .stdout(Stdio::piped())
             .stderr(Stdio::piped())
             .spawn()?;
 
         let output = cmd.wait_with_output()?;
         if !output.status.success() {
-            bail!(
-                "`cargo test` failed: {}",
-                std::str::from_utf8(&output.stderr)?
-            );
+            spinner.stop_and_persist("❌", "Test failed!".to_string());
+            eprintln!("cargo test stdout:");
+            eprintln!("{}", std::str::from_utf8(&output.stdout)?);
+            eprintln!("cargo test stderr:");
+            eprintln!("{}", std::str::from_utf8(&output.stderr)?);
+            bail!("`cargo test` failed");
         }
+        spinner.stop_and_persist("✅", "Tests finished!".to_string());
     }
     let after_tests_time = SystemTime::now();
 
@@ -162,6 +175,7 @@ fn main() -> Result<()> {
 
     // NOTE: run grcov
     {
+        let mut spinner = Spinner::new(Spinners::Dots, "Aggregating coverage info...".to_string());
         // NOTE: for filtering out "irrelevant" lines, i.e. only leaving the contract code
         let re = regex::Regex::new(
             r#"(?x)
@@ -224,6 +238,7 @@ fn main() -> Result<()> {
         };
 
         from_grcov::main(opt);
+        spinner.stop_and_persist("✅", "Coverage aggregated!".to_string());
     }
 
     // NOTE: experimentation with `tarpaulin` as a backend
@@ -257,14 +272,17 @@ fn main() -> Result<()> {
     // NOTE: open resulting report
     match output_type {
         OutputType::Html => {
-            eprintln!("Successfully generated html report at {}/target/coverage/html/index.html, opening...", path.display());
+            eprintln!(
+                "Successfully generated html report at {}/target/coverage/html/index.html, opening...",
+                path.display(),
+            );
             // open::that("./target/coverage/tarpaulin-report.html")?;
             open::that("./target/coverage/html/index.html")?;
         }
         OutputType::Lcov => {
             eprintln!(
                 "Successfully generated lcov report, you can find it at {}/target/coverage/lcov",
-                path.display()
+                path.display(),
             );
         }
     }
