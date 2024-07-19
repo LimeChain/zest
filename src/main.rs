@@ -18,11 +18,6 @@ use spinners::{Spinner, Spinners};
 use solcov::{from_grcov, util, Config, CoverageStrategy, OutputType};
 
 fn main() -> Result<()> {
-    // {
-    //     dbg!(Config::parse());
-    //     return Ok(());
-    // }
-
     let Config {
         path,
         compiler_version,
