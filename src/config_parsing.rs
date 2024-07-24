@@ -5,15 +5,15 @@ use clap_serde_derive::{
     ClapSerde,
 };
 
-#[derive(Parser)] // , Debug, Clone)]
+/// Wrap a `Config` with an optional config file
+#[derive(Parser)]
 #[command(version, about)]
 pub struct WithConfigFile<Config>
 where
-    Config: ClapSerde,
-    // <Config as ClapSerde>::Opt: Debug + Clone,
+    Config: ClapSerde + ConfigFileName + 'static,
 {
     /// Config file
-    #[arg(short, long = "config")]
+    #[arg(short, long = "config", default_value_os_t = PathBuf::from(format!("solime-{}.toml", <Config as ConfigFileName>::NAME)))]
     pub config_path: PathBuf,
 
     /// Rest of arguments
@@ -23,17 +23,25 @@ where
 
 pub trait ParseWithConfigFile
 where
-    Self: ClapSerde,
+    Self: ClapSerde + ConfigFileName,
 {
-    fn parse_with_config_file(args: Option<WithConfigFile<Self>>) -> eyre::Result<Self>;
+    fn parse_with_config_file(
+        args: Option<WithConfigFile<Self>>
+    ) -> eyre::Result<Self>;
+}
+
+/// Used to determine the default value for the `--config` option in `ParseWithConfigFile`
+pub trait ConfigFileName {
+    const NAME: &'static str;
 }
 
 impl<Config> ParseWithConfigFile for Config
 where
-    Config: ClapSerde,
-    // <Config as ClapSerde>::Opt: Debug + Clone,
+    Config: ClapSerde + ConfigFileName,
 {
-    fn parse_with_config_file(args: Option<WithConfigFile<Self>>) -> eyre::Result<Self> {
+    fn parse_with_config_file(
+        args: Option<WithConfigFile<Self>>
+    ) -> eyre::Result<Self> {
         // Parse from CLI
         let mut args =
             args.unwrap_or_else(<WithConfigFile<Self> as Parser>::parse);

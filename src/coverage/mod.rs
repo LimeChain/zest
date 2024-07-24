@@ -6,7 +6,7 @@ use clap_serde_derive::{
 };
 use serde::{Deserialize, Serialize};
 
-use crate::from_grcov;
+use crate::{config_parsing::ConfigFileName, from_grcov};
 
 // #[derive(Debug, Clone, PartialEq, Parser, Serialize, Deserialize)]
 #[derive(ClapSerde, Debug, Clone)]
@@ -41,6 +41,10 @@ pub struct Config {
     #[arg(long, value_enum, help = "Output type of coverage")]
     #[default(OutputType::Html)]
     pub output_type: OutputType,
+}
+
+impl ConfigFileName for Config {
+    const NAME: &'static str = "coverage";
 }
 
 #[derive(
