@@ -2,6 +2,7 @@
 //       modulo exposing everything and making `opt` a parameter for the old `main`
 
 use clap::{builder::PossibleValue, ArgGroup, Parser, ValueEnum};
+use clap_serde_derive::clap;
 use crossbeam_channel::bounded;
 use log::error;
 use regex::Regex;

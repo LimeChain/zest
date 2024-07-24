@@ -1,4 +1,4 @@
-# solcov
+# solime
 Solana Code Coverage CLI Tool
 
 ## Demo screenshot
@@ -9,13 +9,13 @@ Solana Code Coverage CLI Tool
 
 ```bash
 # Clone repo
-git clone https://github.com/LimeChain/solcov
-cd solcov
+git clone https://github.com/LimeChain/solime
+cd solime
 
 # Install the llvm-tools rustup component (needed for getting the profiling info on stable, i.e. when using the `instrument-coverage` strategy)
 rustup component add llvm-tools-preview
 
-# Install globally as `solcov`
+# Install globally as `solime`
 cargo install --path .
 ```
 
@@ -24,14 +24,14 @@ cargo install --path .
 ```bash
 # Move into the target project
 cd ./examples/setter
-# This will run the example using the `instrument-coverage` strategy without `branch` info
-solcov
+# This will run coverage for the example using the `instrument-coverage` strategy without `branch` info
+solime
 
 # Path to the target project can also be specified using the `--path` option
-solcov --path ./examples/setter
+solime cov --path ./examples/setter
 
-# Configuration options can also be read from a (TOML) config file (`solcov.toml` by default)
-cat <<TOML > my_solcov_config.toml
+# Configuration options can also be read from a (TOML) config file (`solime.toml` by default)
+cat <<TOML > my_solime_config.toml
 path = "./examples/setter"
 branch = true
 TOML
@@ -40,11 +40,11 @@ TOML
 #  `coverage_strategy` being `instrument-coverage` (Default)
 #               `path` being `./examples/setter`   (from config file)
 #             `branch` being `false`               (CLI override)
-solcov --config ./my_solcov_config.toml --branch false
+solime cov --config ./my_solime_config.toml --branch false
 ```
 
 > [!NOTE]
-> Check `solcov --help` for more info
+> Check `solime --help` for more info
 
 > [!NOTE]
 > More info on the different strategies can be found [here](https://doc.rust-lang.org/beta/rustc/instrument-coverage.html)

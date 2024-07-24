@@ -1,19 +1,20 @@
 [package]
-name = "solcov"
+name = "solime"
 version = "0.1.0"
 authors = ["Pavel Atanasov <pavel.atanasov@limechain.tech"]
 edition = "2021"
 
 [[bin]]
-name = "solcov"
+name = "solime"
 path = "./src/main.rs"
 
 [lib]
-name = "solcov"
+name = "solime"
 path = "./src/lib.rs"
 
 [dependencies]
-clap = { version = "4.5.0", features = ["derive"] }
+# NOTE: using reexported from `clap-serde-derive`
+# clap = { version = "4.5.0", features = ["derive"] }
 serde = { version = "1.0", features = ["derive"] }
 toml = "0.8.15"
 clap-serde-derive = "0.2.1"
