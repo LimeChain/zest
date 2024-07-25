@@ -1,16 +1,16 @@
 use clap_serde_derive::clap::Parser;
 
 use solime::{
-    config::{Config as MasterConfig, Subcommands},
+    config::{Config, Subcommands},
     config_parsing::ParseWithConfigFile,
-    coverage::{self, Config as CoverageConfig}, generate,
+    coverage, generate,
 };
 
 fn main() -> eyre::Result<()> {
-    let MasterConfig { command } = MasterConfig::parse();
+    let Config { command } = Config::parse();
     match command {
         Subcommands::Coverage(config) => {
-            let config = CoverageConfig::parse_with_config_file(Some(config))?;
+            let config = coverage::Config::parse_with_config_file(Some(config))?;
 
             coverage::run(config)
         }
