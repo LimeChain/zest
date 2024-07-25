@@ -19,6 +19,7 @@ serde = { version = "1.0", features = ["derive"] }
 toml = "0.8.15"
 clap-serde-derive = "0.2.1"
 eyre = "0.6.12"
+itertools = "0.13.0"
 open = "5.0.1"
 spinners = "4.1.1"
 chrono = { version = "0.4.34", features = ["serde"] }

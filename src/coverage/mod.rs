@@ -8,6 +8,7 @@ use clap_serde_derive::{
     ClapSerde,
 };
 use eyre::{bail, Context};
+use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use spinners::{Spinner, Spinners};
 
@@ -43,9 +44,14 @@ pub struct Config {
     #[default(None)]
     pub tests: Option<String>,
 
-    #[arg(long, value_enum, help = "Output type of coverage")]
-    #[default(OutputType::Html)]
-    pub output_type: OutputType,
+    #[arg(
+        long = "output_type",
+        value_name = "output_type",
+        value_enum,
+        help = "Output type of coverage (can be stacked)"
+    )]
+    #[default(vec![OutputType::Html])]
+    pub output_types: Vec<OutputType>,
 }
 
 impl ConfigFileName for Config {
@@ -56,6 +62,7 @@ impl ConfigFileName for Config {
     Debug,
     Clone,
     Copy,
+    Hash,
     PartialEq,
     Eq,
     Default,
@@ -103,7 +110,7 @@ pub fn run(config: Config) -> eyre::Result<()> {
         branch,
         coverage_strategy,
         tests,
-        output_type,
+        output_types,
     } = config;
 
     // Check the conditions after parsing
@@ -202,7 +209,7 @@ pub fn run(config: Config) -> eyre::Result<()> {
     {
         let mut spinner =
             Spinner::new(Spinners::Dots, "Building the project...".to_string());
-        let mut cmd = Command::new("cargo")
+        let cmd = Command::new("cargo")
             .args(compiler_version.as_ref().map(|v| format!("+{}", v)))
             .args(["build", "--tests", "--target-dir", target_dir])
             .stdout(Stdio::piped())
@@ -223,11 +230,11 @@ pub fn run(config: Config) -> eyre::Result<()> {
 
     // Test
     // TODO: limited output
-    let before_tests_time = SystemTime::now();
+    let _before_tests_time = SystemTime::now();
     {
         let mut spinner =
             Spinner::new(Spinners::Dots, "Running the tests...".to_string());
-        let mut cmd = Command::new("cargo")
+        let cmd = Command::new("cargo")
             .args(compiler_version.as_ref().map(|v| format!("+{}", v)))
             .arg("test")
             // NOTE: no filter is passed if `None`
@@ -248,7 +255,7 @@ pub fn run(config: Config) -> eyre::Result<()> {
         }
         spinner.stop_and_persist("✅", "Tests finished!".to_string());
     }
-    let after_tests_time = SystemTime::now();
+    let _after_tests_time = SystemTime::now();
 
     // TODO: `{before,after}-test` shenanigans/optimizations
 
@@ -280,7 +287,12 @@ pub fn run(config: Config) -> eyre::Result<()> {
             paths: vec![coverage_dir.to_string()],
             binary_path: Some(target_dir.into()),
             llvm_path: None,
-            output_types: vec![output_type.into()],
+            // NOTE: `create::OutputType` `into()`-es to `crate::from_grcov::OutputType`
+            output_types: output_types
+                .iter()
+                .cloned()
+                .map(std::convert::Into::into)
+                .collect(),
             output_path: Some(coverage_dir.into()),
             output_config_file: None,
             // NOTE: `.` because we `cd`-ed into the correct directory already
@@ -351,23 +363,26 @@ pub fn run(config: Config) -> eyre::Result<()> {
     //     cmd.wait()?;
     // }
 
-    // NOTE: open resulting report
-    match output_type {
-        OutputType::Html => {
-            eprintln!(
-                "Successfully generated html report at {}/target/coverage/html/index.html, opening...",
-                path.display(),
-            );
-            // open::that("./target/coverage/tarpaulin-report.html")?;
-            open::that("./target/coverage/html/index.html")?;
+    // NOTE: Report regenerated outputs (and possibly open, if applicable)
+    output_types.iter().unique().try_for_each(|output_type| {
+        match output_type {
+            OutputType::Html => {
+                eprintln!(
+                    "Successfully generated html report at {}/target/coverage/html/index.html, opening...",
+                    path.display(),
+                );
+                // open::that("./target/coverage/tarpaulin-report.html")
+                open::that("./target/coverage/html/index.html")
+            }
+            OutputType::Lcov => {
+                eprintln!(
+                    "Successfully generated lcov report, you can find it at {}/target/coverage/lcov",
+                    path.display(),
+                );
+                Ok(())
+            }
         }
-        OutputType::Lcov => {
-            eprintln!(
-                "Successfully generated lcov report, you can find it at {}/target/coverage/lcov",
-                path.display(),
-            );
-        }
-    }
+    })?;
 
     Ok(())
 }
