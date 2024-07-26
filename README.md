@@ -34,6 +34,8 @@ solime cov --path ./examples/setter
 cat <<TOML > my_solime_config.toml
 path = "./examples/setter"
 branch = true
+# tests = ["integration"]
+# output_types = ["Lcov", "Html"]
 TOML
 
 # With would run with

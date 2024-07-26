@@ -58,6 +58,8 @@ pub struct Config {
 }
 
 impl ConfigFileName for Config {
+// TODO: parse from lowercase when `Deserialize`-ing
+// TODO: parse from lowercase when `Deserialize`-ing
     const NAME: &'static str = "coverage";
 }
 
