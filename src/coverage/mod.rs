@@ -40,9 +40,12 @@ pub struct Config {
     pub coverage_strategy: CoverageStrategy,
 
     // TODO: `-- --exact`?
-    #[arg(long, help = "Which tests to run (same as `cargo test`)")]
-    #[default(None)]
-    pub tests: Option<String>,
+    #[arg(
+        long,
+        help = "Which tests to run (as per `cargo test`'s spec, see <https://doc.rust-lang.org/book/ch11-02-running-tests.html>)"
+    )]
+    #[default(vec![])]
+    pub tests: Vec<String>,
 
     #[arg(
         long = "output_type",
@@ -134,6 +137,7 @@ pub fn run(config: Config) -> eyre::Result<()> {
         std::process::exit(1);
     }
 
+    // TODO: use `--manifest-path`
     env::set_current_dir(&path)
         .with_context(|| format!("Could not `cd` to `{}`", path.display()))?;
 
@@ -232,28 +236,50 @@ pub fn run(config: Config) -> eyre::Result<()> {
     // TODO: limited output
     let _before_tests_time = SystemTime::now();
     {
-        let mut spinner =
-            Spinner::new(Spinners::Dots, "Running the tests...".to_string());
-        let cmd = Command::new("cargo")
-            .args(compiler_version.as_ref().map(|v| format!("+{}", v)))
-            .arg("test")
-            // NOTE: no filter is passed if `None`
-            .args(tests)
-            .args(["--target-dir", target_dir])
-            .stdout(Stdio::piped())
-            .stderr(Stdio::piped())
-            .spawn()?;
+        let cargo_test = |tests: Option<&String>| -> eyre::Result<()> {
+            let tests_signifier = tests
+                .as_ref()
+                .map(|test| format!(" ({})", test))
+                .unwrap_or_default();
 
-        let output = cmd.wait_with_output()?;
-        if !output.status.success() {
-            spinner.stop_and_persist("❌", "Test failed!".to_string());
-            eprintln!("cargo test stdout:");
-            eprintln!("{}", std::str::from_utf8(&output.stdout)?);
-            eprintln!("cargo test stderr:");
-            eprintln!("{}", std::str::from_utf8(&output.stderr)?);
-            bail!("`cargo test` failed");
+            let mut spinner = Spinner::new(
+                Spinners::Dots,
+                format!("Running the tests{}...", tests_signifier),
+            );
+
+            let cmd = Command::new("cargo")
+                .args(compiler_version.as_ref().map(|v| format!("+{}", v)))
+                .arg("test")
+                // NOTE: no filter is passed if `None`
+                .args(tests)
+                .args(["--target-dir", target_dir])
+                .stdout(Stdio::piped())
+                .stderr(Stdio::piped())
+                .spawn()?;
+
+            let output = cmd.wait_with_output()?;
+            if !output.status.success() {
+                spinner.stop_and_persist("❌", format!("Tests{} failed!", tests_signifier));
+                eprintln!("cargo test stdout:");
+                eprintln!("{}", std::str::from_utf8(&output.stdout)?);
+                eprintln!("cargo test stderr:");
+                eprintln!("{}", std::str::from_utf8(&output.stderr)?);
+                bail!("`cargo test` failed");
+            }
+
+            spinner.stop_and_persist("✅", format!("Tests{} finished!", tests_signifier));
+
+            Ok(())
+        };
+
+        // NOTE: cargo does not support providing multiple ranges
+        if tests.is_empty() {
+            // NOTE: run all tests
+            cargo_test(None)?;
+        } else {
+            // NOTE: run selected tests
+            tests.iter().map(Some).try_for_each(cargo_test)?;
         }
-        spinner.stop_and_persist("✅", "Tests finished!".to_string());
     }
     let _after_tests_time = SystemTime::now();
 
