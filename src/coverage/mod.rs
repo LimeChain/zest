@@ -70,7 +70,6 @@ impl ConfigFileName for Config {
     const NAME: &'static str = "coverage";
 }
 
-// TODO: parse from lowercase when `Deserialize`-ing
 #[derive(
     Debug,
     Clone,
@@ -83,6 +82,7 @@ impl ConfigFileName for Config {
     Serialize,
     Deserialize,
 )]
+#[serde(rename_all = "snake_case")]
 pub enum OutputType {
     #[default]
     Html,

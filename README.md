@@ -30,12 +30,12 @@ solime
 # Path to the target project can also be specified using the `--path` option
 solime cov --path ./examples/setter
 
-# Configuration options can also be read from a (TOML) config file (`solime.toml` by default)
+# Configuration options can also be read from a (TOML) config file (`solime-coverage.toml` by default)
 cat <<TOML > my_solime_config.toml
 path = "./examples/setter"
 branch = true
 # tests = ["integration"]
-# output_types = ["Lcov", "Html"]
+# output_types = ["lcov", "html"]
 TOML
 
 # With would run with
