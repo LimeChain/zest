@@ -41,15 +41,24 @@ pub struct Config {
 
     // TODO: `-- --exact`?
     #[arg(
-        long,
-        help = "Which tests to run (as per `cargo test`'s spec, see <https://doc.rust-lang.org/book/ch11-02-running-tests.html>)"
+        long = "test",
+        value_name = "OUTPUT_TYPE",
+        help = "Which tests to run (can be stacked) (as per `cargo test`'s spec, see <https://doc.rust-lang.org/book/ch11-02-running-tests.html>)"
     )]
     #[default(vec![])]
     pub tests: Vec<String>,
 
     #[arg(
+        long = "skip",
+        value_name = "TEST_FILTER",
+        help = "Which tests to skip (same rules as `--test`)"
+    )]
+    #[default(vec![])]
+    pub skips: Vec<String>,
+
+    #[arg(
         long = "output_type",
-        value_name = "output_type",
+        value_name = "TEST_FILTER",
         value_enum,
         help = "Output type of coverage (can be stacked)"
     )]
@@ -58,11 +67,10 @@ pub struct Config {
 }
 
 impl ConfigFileName for Config {
-// TODO: parse from lowercase when `Deserialize`-ing
-// TODO: parse from lowercase when `Deserialize`-ing
     const NAME: &'static str = "coverage";
 }
 
+// TODO: parse from lowercase when `Deserialize`-ing
 #[derive(
     Debug,
     Clone,
@@ -115,6 +123,7 @@ pub fn run(config: Config) -> eyre::Result<()> {
         branch,
         coverage_strategy,
         tests,
+        skips,
         output_types,
     } = config;
 
@@ -255,6 +264,8 @@ pub fn run(config: Config) -> eyre::Result<()> {
                 // NOTE: no filter is passed if `None`
                 .args(tests)
                 .args(["--target-dir", target_dir])
+                .arg("--")
+                .args(skips.iter().flat_map(|skip| vec!["--skip", skip]))
                 .stdout(Stdio::piped())
                 .stderr(Stdio::piped())
                 .spawn()?;
