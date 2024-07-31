@@ -1,0 +1,27 @@
+[package]
+name = "hand"
+version = "0.1.0"
+description = "Created with Anchor"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "hand"
+
+[features]
+no-entrypoint = []
+no-idl = []
+no-log-ix-name = []
+cpi = ["no-entrypoint"]
+default = []
+
+# NOTE: anchor-lang 0.27 (currently 0.29 is newest) works with solana-* 1.18 (currently latest)
+
+[dependencies]
+anchor-lang = { version = "=0.27", features = ["init-if-needed"] }
+lever = { path = "../lever", features = ["cpi"] }
+solana-program = "=1.18"
+
+[dev-dependencies]
+solana-program-test = "=1.18"
+solana-sdk = "=1.18"

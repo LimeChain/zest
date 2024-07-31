@@ -23,30 +23,30 @@ cargo install --path .
 
 ```bash
 # Move into the target project
-cd ./examples/setter
+cd ./examples/setter/anchor
 # This will run coverage for the example using the `instrument-coverage` strategy without `branch` info
 solime
 
 # Path to the target project can also be specified using the `--path` option
-solime cov --path ./examples/setter
+solime cov --path ./examples/setter/anchor
 
 # Configuration options can also be read from a (TOML) config file (`solime-coverage.toml` by default)
 cat <<TOML > my_solime_config.toml
-path = "./examples/setter"
+path = "./examples/setter/anchor"
 branch = true
 # tests = ["integration"]
 # output_types = ["lcov", "html"]
 TOML
 
 # With would run with
-#  `coverage_strategy` being `instrument-coverage` (Default)
-#               `path` being `./examples/setter`   (from config file)
-#             `branch` being `false`               (CLI override)
+#  `coverage_strategy` being `instrument-coverage`       (Default)
+#               `path` being `./examples/setter/anchor/` (from config file)
+#             `branch` being `false`                     (CLI override)
 solime cov --config ./my_solime_config.toml --branch false
 ```
 
 > [!NOTE]
-> Check `solime --help` for more info
+> Check `solime --help` and `solime coverage --help` for more info
 
 > [!NOTE]
 > More info on the different strategies can be found [here](https://doc.rust-lang.org/beta/rustc/instrument-coverage.html)
