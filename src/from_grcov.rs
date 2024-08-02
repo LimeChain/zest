@@ -1,5 +1,6 @@
 // NOTE: copied verbatim from <https://github.com/mozilla/grcov/blob/cc77ce34164fc3ea80ac579d1c15f36c9734133c/src/main.rs>,
 //       modulo exposing everything and making `opt` a parameter for the old `main`
+//           && custom `functions` coverage generation
 
 use clap::{builder::PossibleValue, ArgGroup, Parser, ValueEnum};
 use clap_serde_derive::clap;
@@ -8,7 +9,10 @@ use log::error;
 use regex::Regex;
 use rustc_hash::FxHashMap;
 use serde_json::Value;
-use simplelog::{ColorChoice, Config, LevelFilter, TermLogger, TerminalMode, WriteLogger};
+use simplelog::{
+    ColorChoice, Config, LevelFilter, TermLogger, TerminalMode, WriteLogger,
+};
+use std::collections::HashMap;
 use std::fs::{self, File};
 use std::ops::Deref;
 use std::panic;
@@ -19,7 +23,7 @@ use std::{process, thread};
 
 use grcov::*;
 
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq, Eq, Hash, Debug)]
 pub enum OutputType {
     Ade,
     Lcov,
@@ -52,7 +56,10 @@ impl FromStr for OutputType {
 }
 
 impl OutputType {
-    fn to_file_name(&self, output_path: Option<&Path>) -> Option<PathBuf> {
+    fn to_file_name(
+        &self,
+        output_path: Option<&Path>,
+    ) -> Option<PathBuf> {
         output_path.map(|path| {
             if path.is_dir() {
                 match self {
@@ -294,7 +301,7 @@ pub struct Opt {
     pub no_demangle: bool,
 }
 
-pub fn main(opt: Opt) {
+pub fn main(opt: Opt) -> eyre::Result<()> {
     // dbg!(&opt.path_mapping, &opt.paths, &opt.llvm, &opt.prefix_dir);
 
     if let Some(path) = opt.llvm_path {
@@ -367,15 +374,20 @@ pub fn main(opt: Opt) {
         error!("A panic occurred at {}:{}: {}", filename, line, cause);
     }));
 
-    let num_threads: usize = opt.threads.unwrap_or_else(|| 1.max(num_cpus::get() - 1));
+    let num_threads: usize =
+        opt.threads.unwrap_or_else(|| 1.max(num_cpus::get() - 1));
     let source_root = opt
         .source_dir
         .filter(|source_dir| source_dir != Path::new(""))
-        .map(|source_dir| canonicalize_path(source_dir).expect("Source directory does not exist."));
+        .map(|source_dir| {
+            canonicalize_path(source_dir)
+                .expect("Source directory does not exist.")
+        });
 
     let prefix_dir = opt.prefix_dir.or_else(|| source_root.clone());
 
-    let tmp_dir = tempfile::tempdir().expect("Failed to create temporary directory");
+    let tmp_dir =
+        tempfile::tempdir().expect("Failed to create temporary directory");
     let tmp_path = tmp_dir.path().to_owned();
     assert!(tmp_path.exists());
 
@@ -410,7 +422,8 @@ pub fn main(opt: Opt) {
                     Some(serde_json::from_reader(file).unwrap())
                 } else {
                     producer_path_mapping_buf.map(|producer_path_mapping_buf| {
-                        serde_json::from_slice(&producer_path_mapping_buf).unwrap()
+                        serde_json::from_slice(&producer_path_mapping_buf)
+                            .unwrap()
                     })
                 };
             })
@@ -431,7 +444,8 @@ pub fn main(opt: Opt) {
         let t = thread::Builder::new()
             .name(format!("Consumer {}", i))
             .spawn(move || {
-                fs::create_dir(&working_dir).expect("Failed to create working directory");
+                fs::create_dir(&working_dir)
+                    .expect("Failed to create working directory");
                 consumer(
                     &working_dir,
                     source_root.as_deref(),
@@ -479,7 +493,73 @@ pub fn main(opt: Opt) {
         filter_option,
         file_filter,
     );
+    let iterator = {
+        let mut iterator = iterator;
+
+        // NOTE: only consider paths from the project dir
+        if let Some(source_root) = source_root.as_ref() {
+            iterator.retain(|(path, _, _)| path.starts_with(source_root));
+        }
+
+        // NOTE: line-based `functions` coverage
+        iterator = iterator
+            .into_iter()
+            .map(
+                |(
+                    path,
+                    rel_path,
+                    CovResult {
+                        lines,
+                        branches,
+                        functions: _,
+                    },
+                )|
+                 -> eyre::Result<_> {
+                    #[allow(unused_imports)]
+                    use crate::parsing::{
+                        extract_functions, FUNCTION_IN_PROGRAM_MODULE_QUERY,
+                        FUNCTION_QUERY,
+                    };
+
+                    let source_contract_functions =
+                        extract_functions(&path, &FUNCTION_QUERY)?;
+
+                    let functions: HashMap<String, Function, _> =
+                        source_contract_functions
+                            .into_iter()
+                            .map(|(name, range)| {
+                                // NOTE: `Point`'s `row` and `column` are 0-indexed
+                                //       while `CovResult`'s `lines`' are 1-indexed
+                                let start = range.0.row as u32 + 1;
+                                let executed = lines
+                                    .get(&start)
+                                    .map_or(false, |times| *times > 0);
+
+                                (name, Function { start, executed })
+                            })
+                            .collect();
+
+                    Ok((
+                        path,
+                        rel_path,
+                        CovResult {
+                            lines,
+                            branches,
+                            functions,
+                        },
+                    ))
+                },
+            )
+            .collect::<eyre::Result<Vec<_>>>()?;
+        iterator
+    };
+    // NOTE: can very cleanly be defined as a `LazyCell`
     let mut sorted_iterator: Option<Vec<ResultTuple>> = None;
+    // sorted_iterator = sorted_iterator.or_else(|| {
+    //     let mut results = iterator.clone();
+    //     results.sort_by_cached_key(|result| result.0.display().to_string());
+    //     Some(results)
+    // });
 
     let service_number = opt.service_number.unwrap_or_default();
     let service_pull_request = opt.service_pull_request.unwrap_or_default();
@@ -508,7 +588,9 @@ pub fn main(opt: Opt) {
             // compute and cache the sorted results if not already used
             sorted_iterator = sorted_iterator.or_else(|| {
                 let mut results = iterator.clone();
-                results.sort_by_key(|result| result.0.display().to_string());
+                results.sort_by_cached_key(|result| {
+                    result.0.display().to_string()
+                });
                 Some(results)
             });
             sorted_iterator.as_ref().unwrap()
@@ -517,8 +599,12 @@ pub fn main(opt: Opt) {
         };
 
         match output_type {
-            OutputType::Ade => output_activedata_etl(results, output_path.as_deref(), demangle),
-            OutputType::Lcov => output_lcov(results, output_path.as_deref(), demangle),
+            OutputType::Ade => {
+                output_activedata_etl(results, output_path.as_deref(), demangle)
+            }
+            OutputType::Lcov => {
+                output_lcov(results, output_path.as_deref(), demangle)
+            }
             OutputType::Coveralls => output_coveralls(
                 results,
                 opt.token.as_deref(),
@@ -550,7 +636,9 @@ pub fn main(opt: Opt) {
                 demangle,
             ),
             OutputType::Files => output_files(results, output_path.as_deref()),
-            OutputType::Covdir => output_covdir(results, output_path.as_deref(), opt.precision),
+            OutputType::Covdir => {
+                output_covdir(results, output_path.as_deref(), opt.precision)
+            }
             OutputType::Html => output_html(
                 results,
                 output_path.as_deref(),
@@ -565,9 +653,13 @@ pub fn main(opt: Opt) {
                 output_path.as_deref(),
                 demangle,
             ),
-            OutputType::Markdown => output_markdown(results, output_path.as_deref(), opt.precision),
+            OutputType::Markdown => {
+                output_markdown(results, output_path.as_deref(), opt.precision)
+            }
         };
     }
+
+    Ok(())
 }
 
 #[cfg(test)]

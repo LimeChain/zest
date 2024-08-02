@@ -57,7 +57,7 @@ pub struct Config {
     pub skips: Vec<String>,
 
     #[arg(
-        long = "output_type",
+        long = "output-type",
         value_name = "TEST_FILTER",
         value_enum,
         help = "Output type of coverage (can be stacked)"
@@ -307,17 +307,19 @@ pub fn run(config: Config) -> eyre::Result<()> {
         // NOTE: for filtering out "irrelevant" lines, i.e. only leaving the contract code
         let re = regex::Regex::new(
             r#"(?x)
-            ^\s*\#\[(program|account)\]$      # Matches #[program] or #[account]
+            ^\s*\#\[(program|account)\]$       # Matches #[program] or #[account]
             |
-            ^\s*\#\[(tokio::)?test\]$         # Matches #[test] or #[tokio::test]
+            ^\s*\#\[(tokio::)?test\]$          # Matches #[test] or #[tokio::test]
             |
-            ^\s*\#\[derive\(\s*[^\)]+\s*\)\]$ # Matches #[derive(Trait, ...)]
+            ^\s*\#\[derive\(\s*[^\)]+\s*\)\]$  # Matches #[derive(Trait, ...)]
             |
-            ^\s*declare_id!\(\s*.*\s*\);$     # Matches declare_id!(...)
+            ^\s*declare_id!\(\s*.*\s*\);$      # Matches declare_id!(...)
+            |
+            ^\s*declare_program!\(\s*.*\s*\);$ # Matches declare_id!(...)
             # |
-            # ^\s*$                          # Matches "empty" lines
+            # ^\s*$                              # Matches "empty" lines
             # |
-            # ^\s*[\(\)\[\]\{\}]*\s*$        # Matches lines with only brackets
+            # ^\s*[\(\)\[\]\{\}]*\s*$            # Matches lines with only brackets
         "#,
         )?;
 
@@ -370,7 +372,7 @@ pub fn run(config: Config) -> eyre::Result<()> {
             no_demangle: false,
         };
 
-        from_grcov::main(opt);
+        from_grcov::main(opt)?;
         spinner.stop_and_persist("✅", "Coverage aggregated!".to_string());
     }
 
