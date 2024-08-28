@@ -15,6 +15,11 @@ use spinners::{Spinner, Spinners};
 
 use crate::{config_parsing::ConfigFileName, from_grcov, util};
 
+mod rustup;
+use rustup::is_rustup_managed;
+
+use self::rustup::install_llvm_tools;
+
 // #[derive(Debug, Clone, PartialEq, Parser, Serialize, Deserialize)]
 #[derive(ClapSerde, Debug, Clone)]
 pub struct Config {
@@ -134,7 +139,7 @@ pub fn run(config: Config) -> eyre::Result<()> {
         .map(|v| v.contains("nightly"))
         .unwrap_or(true);
 
-    if compiler_version.is_some() && !util::is_rustup_managed() {
+    if compiler_version.is_some() && !is_rustup_managed() {
         eprintln!("Error: specifying the `compiler_version` requires usage of a `rustup`-managed Rust installation");
         std::process::exit(1);
     }
@@ -152,6 +157,11 @@ pub fn run(config: Config) -> eyre::Result<()> {
     // TODO: use `--manifest-path`
     env::set_current_dir(&path)
         .with_context(|| format!("Could not `cd` to `{}`", path.display()))?;
+
+    // TODO: parse from target-dir's `rust-toolchain.toml`
+    install_llvm_tools(
+        compiler_version.as_ref().unwrap_or(&"stable".to_string()),
+    )?;
 
     let target_dir = "./target";
     let coverage_dir = "./target/coverage";
