@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::io;
 use std::process::{Command, Stdio};
 use std::time::SystemTime;
@@ -23,7 +24,7 @@ pub struct Config {
 
     #[arg(
         long,
-        help = "Version of the compiler to use. Nightly required for branch coverage"
+        help = "Version of the compiler toolchain to use (overrides project-specific `rust-toolchain.toml`). Nightly required for branch coverage"
     )]
     #[default(None)]
     pub compiler_version: Option<String>,
@@ -186,8 +187,10 @@ pub fn run(config: Config) -> eyre::Result<()> {
             .try_for_each(fs::remove_file)?;
     }
 
+    let mut env_vars: HashMap<&str, String> = HashMap::new();
+
     // TODO: only for `CoverageStrategy::InstrumentCoverage`
-    env::set_var(
+    env_vars.insert(
         "LLVM_PROFILE_FILE",
         format!(
             "{}/solime-%p-%m.profraw",
@@ -206,17 +209,17 @@ pub fn run(config: Config) -> eyre::Result<()> {
                     rustflags.push_str(" -Z coverage-options=mcdc");
                 }
 
-                env::set_var("RUSTFLAGS", rustflags);
+                env_vars.insert("RUSTFLAGS", rustflags);
             }
             CoverageStrategy::ZProfile => {
                 // NOTE: "can't instrument with gcov profiling when compiling incrementally"
-                env::set_var("CARGO_INCREMENTAL", "0");
-                env::set_var("RUSTFLAGS", "-Z profile");
+                env_vars.insert("CARGO_INCREMENTAL", "0".to_string());
+                env_vars.insert("RUSTFLAGS", "-Z profile".to_string());
             }
         }
 
-        env::set_var("RUST_BACKTRACE", "1");
-        env::set_var("RUST_MIN_STACK", "8388608");
+        env_vars.insert("RUST_BACKTRACE", "1".to_string());
+        env_vars.insert("RUST_MIN_STACK", "8388608".to_string());
     }
 
     // Build
@@ -227,6 +230,7 @@ pub fn run(config: Config) -> eyre::Result<()> {
         let cmd = Command::new("cargo")
             .args(compiler_version.as_ref().map(|v| format!("+{}", v)))
             .args(["build", "--tests", "--target-dir", target_dir])
+            .envs(&env_vars)
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
             .spawn()?;
@@ -266,13 +270,17 @@ pub fn run(config: Config) -> eyre::Result<()> {
                 .args(["--target-dir", target_dir])
                 .arg("--")
                 .args(skips.iter().flat_map(|skip| vec!["--skip", skip]))
+                .envs(&env_vars)
                 .stdout(Stdio::piped())
                 .stderr(Stdio::piped())
                 .spawn()?;
 
             let output = cmd.wait_with_output()?;
             if !output.status.success() {
-                spinner.stop_and_persist("❌", format!("Tests{} failed!", tests_signifier));
+                spinner.stop_and_persist(
+                    "❌",
+                    format!("Tests{} failed!", tests_signifier),
+                );
                 eprintln!("cargo test stdout:");
                 eprintln!("{}", std::str::from_utf8(&output.stdout)?);
                 eprintln!("cargo test stderr:");
@@ -280,7 +288,10 @@ pub fn run(config: Config) -> eyre::Result<()> {
                 bail!("`cargo test` failed");
             }
 
-            spinner.stop_and_persist("✅", format!("Tests{} finished!", tests_signifier));
+            spinner.stop_and_persist(
+                "✅",
+                format!("Tests{} finished!", tests_signifier),
+            );
 
             Ok(())
         };
@@ -409,16 +420,16 @@ pub fn run(config: Config) -> eyre::Result<()> {
         match output_type {
             OutputType::Html => {
                 eprintln!(
-                    "Successfully generated html report at {}/target/coverage/html/index.html, opening...",
-                    path.display(),
+                    "Successfully generated html report at {}, opening...",
+                    path.join("target/coverage/html/index.html").display(),
                 );
                 // open::that("./target/coverage/tarpaulin-report.html")
                 open::that("./target/coverage/html/index.html")
             }
             OutputType::Lcov => {
                 eprintln!(
-                    "Successfully generated lcov report, you can find it at {}/target/coverage/lcov",
-                    path.display(),
+                    "Successfully generated lcov report, you can find it at {}",
+                    path.join("target/coverage/lcov").display(),
                 );
                 Ok(())
             }
