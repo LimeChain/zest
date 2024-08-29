@@ -12,9 +12,6 @@ Solana Code Coverage CLI Tool
 git clone https://github.com/LimeChain/solime
 cd solime
 
-# Install the llvm-tools rustup component (needed for getting the profiling info on stable, i.e. when using the `instrument-coverage` strategy)
-rustup component add llvm-tools-preview
-
 # Install globally as `solime`
 cargo install --path .
 ```
