@@ -41,6 +41,13 @@ pub struct Config {
     #[default(false)]
     pub branch: bool,
 
+    #[arg(
+        long,
+        help = "Whether to build and test using Solana's `cargo-build-sbf` and `cargo-test-sbf` tools"
+    )]
+    #[default(false)]
+    pub with_sbf: bool,
+
     #[arg(long, value_enum, help = "Coverage strategy to use")]
     #[default(CoverageStrategy::InstrumentCoverage)]
     pub coverage_strategy: CoverageStrategy,
@@ -127,6 +134,7 @@ pub fn run(config: Config) -> eyre::Result<()> {
         path,
         compiler_version,
         branch,
+        with_sbf,
         coverage_strategy,
         tests,
         skips,
@@ -239,7 +247,7 @@ pub fn run(config: Config) -> eyre::Result<()> {
             Spinner::new(Spinners::Dots, "Building the project...".to_string());
         let cmd = Command::new("cargo")
             .args(compiler_version.as_ref().map(|v| format!("+{}", v)))
-            .arg("build")
+            .args(if with_sbf { ["build-sbf", "--"].iter() } else { ["build"].iter() })
             // NOTE: force color (for prettier error messages)
             .args(["--color", "always"])
             .args(["--tests", "--target-dir", target_dir])
@@ -277,7 +285,7 @@ pub fn run(config: Config) -> eyre::Result<()> {
 
             let cmd = Command::new("cargo")
                 .args(compiler_version.as_ref().map(|v| format!("+{}", v)))
-                .arg("test")
+                .args(if with_sbf { ["test-sbf", "--"].iter() } else { ["test"].iter() })
                 // NOTE: force color (for prettier error messages)
                 .args(["--color", "always"])
                 // NOTE: no filter is passed if `None`
