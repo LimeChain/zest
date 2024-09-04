@@ -5,7 +5,7 @@ use std::time::SystemTime;
 use std::{env, fs, path::PathBuf};
 
 use clap_serde_derive::{
-    clap::{self, ValueEnum},
+    clap::{self, ArgAction, ValueEnum},
     ClapSerde,
 };
 use eyre::{bail, Context};
@@ -43,6 +43,7 @@ pub struct Config {
 
     #[arg(
         long,
+        action(ArgAction::SetTrue),
         help = "Whether to build and test using Solana's `cargo-build-sbf` and `cargo-test-sbf` tools"
     )]
     #[default(false)]
@@ -55,7 +56,7 @@ pub struct Config {
     // TODO: `-- --exact`?
     #[arg(
         long = "test",
-        value_name = "OUTPUT_TYPE",
+        value_name = "TEST_FILTER",
         help = "Which tests to run (can be stacked) (as per `cargo test`'s spec, see <https://doc.rust-lang.org/book/ch11-02-running-tests.html>)"
     )]
     #[default(vec![])]
@@ -71,7 +72,7 @@ pub struct Config {
 
     #[arg(
         long = "output-type",
-        value_name = "TEST_FILTER",
+        value_name = "OUTPUT_TYPE",
         value_enum,
         help = "Output type of coverage (can be stacked)"
     )]

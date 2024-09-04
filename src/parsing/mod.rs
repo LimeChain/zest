@@ -8,6 +8,9 @@ use lazy_static::lazy_static;
 use tree_sitter::{InputEdit, Language, Parser, Point, Query, QueryCursor};
 
 // NOTE: can use `LazyCell` on `Rust` >= 1.80.0, but the `time` crate doesn't compile there
+//       <https://github.com/time-rs/time/issues/693>
+//       <https://github.com/coral-xyz/anchor/pull/3143>
+//       <https://github.com/solana-developers/program-examples/issues/110>
 
 lazy_static! {
     pub static ref LANGUAGE: Language = tree_sitter_rust::language();
