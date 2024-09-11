@@ -35,7 +35,7 @@ branch = true
 # output_types = ["lcov", "html"]
 TOML
 
-# With would run with
+# Which would run with
 #  `coverage_strategy` being `instrument-coverage`       (Default)
 #               `path` being `./examples/setter/anchor/` (from config file)
 #             `branch` being `false`                     (CLI override)
@@ -47,6 +47,29 @@ solime cov --config ./my_solime_config.toml --branch false
 
 > [!NOTE]
 > More info on the different strategies can be found [here](https://doc.rust-lang.org/beta/rustc/instrument-coverage.html)
+
+## Program compatibility
+
+Currently, `solime` only supports testing programs, written in Rust, with tests written in Rust (usually using [solana-program-test](https://crates.io/crates/solana-program-test), as opposed to the *classic* `Typescript` tests), which do not depend on the `cargo-{build,test}-sbf` toolchain.
+A.K.A if `cargo test` works for you (not `cargo test-sbf`), then `solime` will too
+
+Here's a small list of publicly available Solana programs that we've tested if they work with `solime` or not:
+Works on:
+- [raydium-clmm](https://github.com/raydium-io/raydium-clmm)
+- [serum-dex](https://github.com/jup-ag/serum-dex)
+- [token-vesting](https://github.com/staratlasmeta/token-vesting)
+Does not work on (for now, see below):
+- [raydium-amm](https://github.com/raydium-io/raydium-amm)
+- [phoenix-v1](https://github.com/jup-ag/phoenix-v1)
+- [stable-swap](https://github.com/jup-ag/stable-swap)
+- [jupiter-amm-implementation](https://github.com/jup-ag/jupiter-amm-implementation)
+
+How to make sure `solime` works for your program:
+1. Make sure you're using a Rust framework ([solana-program-test](https://crates.io/crates/solana-program-test) or similar, like [liteSVM](https://github.com/LiteSVM/litesvm)) for your testing purposes
+2. Either
+  - Wait out until Solana adds support for coverage in their `cargo-{build,test}-sbf` toolchain. Once they've done that you can pass the `--with-sbf` option to `solime` to enable its usage (without any changes needed to `solime`).
+  - Make sure your tests are runnable by just `cargo test`
+    This is done by supplying your program's `processor` (the `process_instruction` function) directly when adding it (the program) to the test validator (`ProgramTest` for `solana-program-test`) (see [this](./examples/setter/anchor/programs/setter/tests/integration.rs), `processor!(setter::entry)`). This, however puts a few limitations on what kinds of programs one could write (regarding the type of the processor function). For example, the [`shank`](https://github.com/metaplex-foundation/shank) framework does not support this, since it puts a type constraint on the `processor` function (because of the `context` function from [`ShankContext`](https://docs.rs/shank/0.4.2/shank/derive.ShankContext.html)), which breaks the compatibility (and thus makes it testable only in *`sbf` mode*).
 
 ## Branch coverage
 
@@ -73,4 +96,3 @@ solime cov --config ./my_solime_config.toml --branch false
 
   **TLDR**: we either chose to support `branch` coverage or the ability to compile solana programs (IMO the second is a far more important requirement)
 </details>
-
