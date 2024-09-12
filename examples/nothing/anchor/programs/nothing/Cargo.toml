@@ -1,0 +1,15 @@
+[package]
+name = "nothing"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anchor-lang = { version = "=0.27", features = ["init-if-needed"] }
+solana-program = "=1.18"
+
+[dev-dependencies]
+solana-program-test = "=1.18"
+solana-sdk = "=1.18"
+
+[lib]
+crate-type = ["cdylib", "lib"]
