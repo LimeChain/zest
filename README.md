@@ -50,32 +50,38 @@ solime cov --config ./my_solime_config.toml --branch false
 
 ## Program compatibility
 
-Currently, `solime` only supports testing programs, written in Rust, with tests written in Rust (usually using [solana-program-test](https://crates.io/crates/solana-program-test), as opposed to the *classic* `Typescript` tests), which do not depend on the `cargo-{build,test}-sbf` toolchain.
-A.K.A if `cargo test` works for you (not `cargo test-sbf`), then `solime` will too
+Currently, `solime` only supports testing programs, written in Rust, with tests written in Rust (usually using [solana-program-test](https://crates.io/crates/solana-program-test), as opposed to the *classic* `Typescript` tests), which do not depend on the `cargo-{build,test}-sbf` toolchain. A.K.A if `cargo test` works for you (not `cargo test-sbf`), then `solime` will too
 
-Here's a small list of publicly available Solana programs that we've tested if they work with `solime` or not:
+Here's a small list of publicly available Solana programs that we've tested if they work with `solime` or not:
 
 Works on:
+
 - [raydium-clmm](https://github.com/raydium-io/raydium-clmm)
 - [serum-dex](https://github.com/jup-ag/serum-dex)
 - [token-vesting](https://github.com/staratlasmeta/token-vesting)
 
-Does not work on (for now, see below):
-- [raydium-amm](https://github.com/raydium-io/raydium-amm)
-- [phoenix-v1](https://github.com/jup-ag/phoenix-v1)
-- [stable-swap](https://github.com/jup-ag/stable-swap)
-- [jupiter-amm-implementation](https://github.com/jup-ag/jupiter-amm-implementation)
+### Compatibility requirements
 
-How to make sure `solime` works for your program:
-1. Make sure you're using a Rust framework ([solana-program-test](https://crates.io/crates/solana-program-test) or similar, like [liteSVM](https://github.com/LiteSVM/litesvm)) for your testing purposes
-2. Either
-  - Wait out until Solana adds support for coverage in their `cargo-{build,test}-sbf` toolchain
+How to make sure `solime` works for your program:
 
-  Once they've done that you can pass the `--with-sbf` option to `solime` to enable its usage (without any changes needed to `solime`).
+1. Make sure you're using a Rust framework ([solana-program-test](https://crates.io/crates/solana-program-test) or similar, like [liteSVM](https://github.com/LiteSVM/litesvm)) for your testing purposes
+2. Make sure your tests are runnable by just `cargo test`
+    
+    This is done by supplying your program's `processor` (the `process_instruction` function) directly when adding it to the test validator 
+    
+    ```rust
+    let mut validator = ProgramTest::default();
+    validator.add_program(
+        "counter_solana_native",
+        counter_solana_native::ID,
+        processor!(counter_solana_native::process_instruction),
+    );
+    ```
+    
+    That requirement is incompatible with `shank` framework, since it puts a type constraint on the `processor` function. 
 
-  - Make sure your tests are runnable by just `cargo test`
-
-  This is done by supplying your program's `processor` (the `process_instruction` function) directly when adding it (the program) to the test validator (`ProgramTest` for `solana-program-test`) (see [this](./examples/setter/anchor/programs/setter/tests/integration.rs), `processor!(setter::entry)`). This, however puts a few limitations on what kinds of programs one could write (regarding the type of the processor function). For example, the [`shank`](https://github.com/metaplex-foundation/shank) framework does not support this, since it puts a type constraint on the `processor` function (because of the `context` function from [`ShankContext`](https://docs.rs/shank/0.4.2/shank/derive.ShankContext.html), seen clearly in their [example](https://docs.rs/shank/0.4.2/shank/derive.ShankContext.html#example)), which breaks the compatibility (and thus makes it testable only in *`sbf` mode*).
+> [!NOTE]
+> That happens because of the `context` function from [`ShankContext`](https://docs.rs/shank/0.4.2/shank/derive.ShankContext.html), seen in their [example](https://docs.rs/shank/0.4.2/shank/derive.ShankContext.html#example) (the `'a` lifetime), which breaks the compatibility (and thus makes it testable only in *`sbf` mode*).
 
 ## Branch coverage
 
