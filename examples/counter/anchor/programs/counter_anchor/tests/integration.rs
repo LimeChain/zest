@@ -1,4 +1,4 @@
-use borsh::BorshDeserialize;
+use anchor_lang::{AccountDeserialize, InstructionData};
 use solana_program_test::{
     processor, tokio, BanksClientError, ProgramTest, ProgramTestContext,
 };
@@ -15,16 +15,16 @@ use solana_sdk::{
 async fn test_program() {
     let mut validator = ProgramTest::default();
     validator.add_program(
-        "counter_solana_native",
-        counter_solana_native::ID,
-        processor!(counter_solana_native::process_instruction),
+        "counter_anchor",
+        counter_anchor::ID,
+        processor!(counter_anchor::entry),
     );
 
     let steve = add_account(&mut validator);
     let mut context = validator.start_with_context().await;
     let counter_pda = Pubkey::find_program_address(
         &[steve.pubkey().as_ref()],
-        &counter_solana_native::ID,
+        &counter_anchor::ID,
     )
     .0;
 
@@ -46,7 +46,7 @@ async fn test_program() {
             .unwrap()
             .unwrap();
 
-        let data = counter_solana_native::state::Counter::deserialize(
+        let data = counter_anchor::CounterState::try_deserialize(
             &mut steve_after.data.as_ref(),
         )
         .unwrap();
@@ -71,11 +71,11 @@ async fn increment(
     counter_pda: Pubkey,
 ) -> Result<(), BanksClientError> {
     let instruction = Instruction::new_with_bytes(
-        counter_solana_native::ID,
-        &[0, 1, 2],
+        counter_anchor::ID,
+        &counter_anchor::instruction::Increment.data(),
         vec![
-            AccountMeta::new(sender.pubkey(), true),
             AccountMeta::new(counter_pda, false),
+            AccountMeta::new(sender.pubkey(), true),
             AccountMeta::new(solana_sdk::system_program::ID, false),
         ],
     );

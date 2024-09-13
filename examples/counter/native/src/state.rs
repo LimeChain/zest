@@ -4,6 +4,3 @@ use borsh::{BorshDeserialize, BorshSerialize};
 pub struct Counter {
     pub count: u64,
 }
-
-#[derive(BorshSerialize, BorshDeserialize, Debug, Clone)]
-pub struct IncrementInstruction;

@@ -1,15 +1,19 @@
-use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::{
     account_info::{next_account_info, AccountInfo},
     declare_id,
     entrypoint::ProgramResult,
     msg,
-    program_error::ProgramError,
+    program::invoke_signed,
     pubkey::Pubkey,
 };
 
 pub mod state;
-use solana_sdk::instruction::{self, AccountMeta, Instruction};
+use borsh::BorshSerialize;
+#[allow(deprecated)]
+use solana_sdk::{
+    borsh::try_from_slice_unchecked, rent::Rent, system_instruction,
+    sysvar::Sysvar,
+};
 use state::*;
 
 declare_id!("Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS");
@@ -30,7 +34,7 @@ pub fn process_instruction(
     match instruction_discriminant[0] {
         0 => {
             msg!("Instruction: Increment");
-            process_increment_counter(accounts, instruction_data_inner)?;
+            process_increment_counter_2(accounts, instruction_data_inner)?;
         }
         _ => {
             msg!("Error: unknown instruction")
@@ -39,31 +43,61 @@ pub fn process_instruction(
     Ok(())
 }
 
-pub fn process_increment_counter(
+pub fn process_increment_counter_2(
     accounts: &[AccountInfo],
     _instruction_data: &[u8],
-) -> Result<(), ProgramError> {
+) -> ProgramResult {
+    // Get Account iterator
     let account_info_iter = &mut accounts.iter();
 
-    let counter_account = next_account_info(account_info_iter)?;
-    assert!(
-        counter_account.is_writable,
-        "Counter account must be writable"
-    );
+    // Get accounts
+    let initializer = next_account_info(account_info_iter)?;
+    let pda_account = next_account_info(account_info_iter)?;
+    let system_program = next_account_info(account_info_iter)?;
 
-    let mut counter =
-        Counter::try_from_slice(&counter_account.try_borrow_mut_data()?)?;
-    counter.count += 1;
-    counter.serialize(&mut *counter_account.data.borrow_mut())?;
+    // Derive PDA
+    let (pda, bump_seed) =
+        Pubkey::find_program_address(&[initializer.key.as_ref()], &ID);
 
-    msg!("Counter state incremented to {:?}", counter.count);
+    // Calculate account size required
+    let account_len: usize = 1 + 1 + 8;
+    // let account_len: usize = 1 + 1 + size_of::<Counter>();
+
+    // Calculate rent required
+    let rent = Rent::get()?;
+    let rent_lamports = rent.minimum_balance(account_len);
+
+    // Create the account
+    invoke_signed(
+        &system_instruction::create_account(
+            initializer.key,
+            pda_account.key,
+            rent_lamports,
+            account_len.try_into().unwrap(),
+            &ID,
+        ),
+        &[
+            initializer.clone(),
+            pda_account.clone(),
+            system_program.clone(),
+        ],
+        &[&[initializer.key.as_ref(), &[bump_seed]]],
+    )?;
+
+    msg!("PDA created: {}", pda);
+
+    msg!("unpacking state account");
+    #[allow(deprecated)]
+    let mut account_data =
+        try_from_slice_unchecked::<Counter>(&pda_account.data.borrow())
+            .unwrap();
+    msg!("borrowed account data");
+
+    account_data.count += 1;
+
+    msg!("serializing account");
+    account_data.serialize(&mut &mut pda_account.data.borrow_mut()[..])?;
+    msg!("state account serialized");
+
     Ok(())
-}
-
-pub fn count_instruction(sender: Pubkey) -> Instruction {
-    Instruction::new_with_borsh(
-        ID,
-        &IncrementInstruction,
-        vec![AccountMeta::new(sender, false)],
-    )
 }

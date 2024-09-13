@@ -1,8 +1,10 @@
 use anchor_lang::AccountDeserialize;
-use solana_program_test::{processor, tokio, BanksClientError, ProgramTest, ProgramTestContext};
+use solana_program_test::{
+    processor, tokio, BanksClientError, ProgramTest, ProgramTestContext,
+};
 use solana_sdk::{
-    account::AccountSharedData, pubkey::Pubkey, signature::Keypair, signer::Signer,
-    transaction::Transaction,
+    account::AccountSharedData, pubkey::Pubkey, signature::Keypair,
+    signer::Signer, transaction::Transaction,
 };
 
 #[tokio::test]
@@ -48,8 +50,10 @@ async fn test_program() {
             .unwrap()
             .unwrap();
 
-        let text_data =
-            setter::SetterState::try_deserialize(&mut steve_text_expected.data.as_ref()).unwrap();
+        let text_data = setter::SetterState::try_deserialize(
+            &mut steve_text_expected.data.as_ref(),
+        )
+        .unwrap();
         assert_eq!(text_data.text, steve_text);
     }
 
@@ -66,21 +70,29 @@ async fn test_program() {
             .unwrap()
             .unwrap();
 
-        let text_data =
-            setter::SetterState::try_deserialize(&mut ivan_text_expected.data.as_ref()).unwrap();
+        let text_data = setter::SetterState::try_deserialize(
+            &mut ivan_text_expected.data.as_ref(),
+        )
+        .unwrap();
         assert_eq!(text_data.text, ivan_text);
     }
 
     // Set second message again
     {
-        let res = set_text(&mut context, &ivan, text_pda_ivan, "Error".to_string()).await;
+        let res =
+            set_text(&mut context, &ivan, text_pda_ivan, "Error".to_string())
+                .await;
         assert!(res.is_err());
     }
 }
 
 fn add_account(validator: &mut ProgramTest) -> Keypair {
     let keypair = Keypair::new();
-    let account = AccountSharedData::new(1_000_000_000, 0, &solana_sdk::system_program::id());
+    let account = AccountSharedData::new(
+        1_000_000_000,
+        0,
+        &solana_sdk::system_program::id(),
+    );
     validator.add_account(keypair.pubkey(), account.into());
     keypair
 }
