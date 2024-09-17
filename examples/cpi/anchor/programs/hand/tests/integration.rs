@@ -109,7 +109,3 @@ async fn flip_lever_cpi(
 
     context.banks_client.process_transaction(transaction).await
 }
-// cargo-test-sbf
-// cargo test-bpf
-
-// cargo test-bpf --test initialize -- testing_iniitalize

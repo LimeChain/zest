@@ -72,7 +72,8 @@ async fn increment(
 ) -> Result<(), BanksClientError> {
     let instruction = Instruction::new_with_bytes(
         counter_solana_native::ID,
-        &[0, 1, 2],
+        // NOTE: just for the discriminator, no instruction data needed
+        &[0],
         vec![
             AccountMeta::new(sender.pubkey(), true),
             AccountMeta::new(counter_pda, false),

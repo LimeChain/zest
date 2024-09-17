@@ -15,8 +15,6 @@ no-log-ix-name = []
 cpi = ["no-entrypoint"]
 default = []
 
-# NOTE: anchor-lang 0.27 (currently 0.29 is newest) works with solana-* 1.18 (currently latest)
-
 [dependencies]
 anchor-lang = { version = "=0.27", features = ["init-if-needed"] }
 lever = { path = "../lever", features = ["cpi"] }

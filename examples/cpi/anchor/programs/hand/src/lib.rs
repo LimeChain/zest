@@ -9,8 +9,6 @@ use solana_program::instruction::Instruction;
 declare_id!("EJfTLXDCJTVwBgGpz9X2Me4CWHbvg8F8zsM7fiVJLLeR");
 
 #[derive(Accounts)]
-// NOTE: (seemingly) has no effect
-// #[instruction(name: String)]
 pub struct PullLever<'info> {
     #[account(mut)]
     pub power: Account<'info, PowerStatus>,
@@ -23,12 +21,10 @@ pub mod hand {
 
     pub fn pull_lever(ctx: Context<PullLever>, name: String) -> Result<()> {
         // Hitting the switch_power method on the lever program
-        //
         lever::cpi::switch_power(
             CpiContext::new(
                 ctx.accounts.lever_program.to_account_info(),
                 // Using the accounts context struct from the lever program
-                //
                 SetPowerStatus {
                     power: ctx.accounts.power.to_account_info(),
                 },

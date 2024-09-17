@@ -34,7 +34,7 @@ pub fn process_instruction(
     match instruction_discriminant[0] {
         0 => {
             msg!("Instruction: Increment");
-            process_increment_counter_2(accounts, instruction_data_inner)?;
+            process_increment_counter(accounts, instruction_data_inner)?;
         }
         _ => {
             msg!("Error: unknown instruction")
@@ -43,7 +43,7 @@ pub fn process_instruction(
     Ok(())
 }
 
-pub fn process_increment_counter_2(
+pub fn process_increment_counter(
     accounts: &[AccountInfo],
     _instruction_data: &[u8],
 ) -> ProgramResult {
@@ -61,7 +61,6 @@ pub fn process_increment_counter_2(
 
     // Calculate account size required
     let account_len: usize = 1 + 1 + 8;
-    // let account_len: usize = 1 + 1 + size_of::<Counter>();
 
     // Calculate rent required
     let rent = Rent::get()?;
