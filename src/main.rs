@@ -1,6 +1,6 @@
 use clap_serde_derive::clap::Parser;
 
-use solime::{
+use zest::{
     config::{Config, Subcommands},
     config_parsing::ParseWithConfigFile,
     coverage, generate,

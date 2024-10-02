@@ -13,7 +13,7 @@ where
     Config: ClapSerde + ConfigFileName + 'static,
 {
     /// Config file
-    #[arg(short, long = "config", default_value_os_t = PathBuf::from(format!("solime-{}.toml", <Config as ConfigFileName>::NAME)))]
+    #[arg(short, long = "config", default_value_os_t = PathBuf::from(format!("zest-{}.toml", <Config as ConfigFileName>::NAME)))]
     pub config_path: PathBuf,
 
     /// Rest of arguments

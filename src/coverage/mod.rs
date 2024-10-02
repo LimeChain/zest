@@ -212,7 +212,7 @@ pub fn run(config: Config) -> eyre::Result<()> {
     env_vars.insert(
         "LLVM_PROFILE_FILE",
         format!(
-            "{}/solime-%p-%m.profraw",
+            "{}/zest-%p-%m.profraw",
             PathBuf::from(coverage_dir).canonicalize()?.display()
         ),
     );

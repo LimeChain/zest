@@ -1,16 +1,16 @@
 [package]
-name = "solime"
+name = "zest"
 version = "0.1.0"
 authors = ["Pavel Atanasov <pavel.atanasov@limechain.tech"]
 edition = "2021"
 rust-version = "1.78"
 
 [[bin]]
-name = "solime"
+name = "zest"
 path = "./src/main.rs"
 
 [lib]
-name = "solime"
+name = "zest"
 path = "./src/lib.rs"
 
 [dependencies]

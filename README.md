@@ -1,4 +1,5 @@
-# solime
+# Zest
+
 Solana Code Coverage CLI Tool
 
 ## Demo screenshot
@@ -9,10 +10,10 @@ Solana Code Coverage CLI Tool
 
 ```bash
 # Clone repo
-git clone https://github.com/LimeChain/solime
-cd solime
+git clone https://github.com/LimeChain/zest
+cd zest
 
-# Install globally as `solime`
+# Install globally as `zest`
 cargo install --path .
 ```
 
@@ -22,13 +23,13 @@ cargo install --path .
 # Move into the target project
 cd ./examples/setter/anchor
 # This will run coverage for the example using the `instrument-coverage` strategy without `branch` info
-solime
+zest
 
 # Path to the target project can also be specified using the `--path` option
-solime cov --path ./examples/setter/anchor
+zest cov --path ./examples/setter/anchor
 
-# Configuration options can also be read from a (TOML) config file (`solime-coverage.toml` by default)
-cat <<TOML > my_solime_config.toml
+# Configuration options can also be read from a (TOML) config file (`zest-coverage.toml` by default)
+cat <<TOML > my_zest_config.toml
 path = "./examples/setter/anchor"
 branch = true
 # tests = ["integration"]
@@ -39,20 +40,20 @@ TOML
 #  `coverage_strategy` being `instrument-coverage`       (Default)
 #               `path` being `./examples/setter/anchor/` (from config file)
 #             `branch` being `false`                     (CLI override)
-solime cov --config ./my_solime_config.toml --branch false
+zest cov --config ./my_zest_config.toml --branch false
 ```
 
 > [!NOTE]
-> Check `solime --help` and `solime coverage --help` for more info
+> Check `zest --help` and `zest coverage --help` for more info
 
 > [!NOTE]
 > More info on the different strategies can be found [here](https://doc.rust-lang.org/beta/rustc/instrument-coverage.html)
 
 ## Program compatibility
 
-Currently, `solime` only supports testing programs, written in Rust, with tests written in Rust (usually using [solana-program-test](https://crates.io/crates/solana-program-test), as opposed to the *classic* `Typescript` tests), which do not depend on the `cargo-{build,test}-sbf` toolchain. A.K.A if `cargo test` works for you (not `cargo test-sbf`), then `solime` will too
+Currently, `zest` only supports testing programs, written in Rust, with tests written in Rust (usually using [solana-program-test](https://crates.io/crates/solana-program-test), as opposed to the *classic* `Typescript` tests), which do not depend on the `cargo-{build,test}-sbf` toolchain. A.K.A if `cargo test` works for you (not `cargo test-sbf`), then `zest` will too
 
-Here's a small list of publicly available Solana programs that we've tested if they work with `solime` or not:
+Here's a small list of publicly available Solana programs that we've tested if they work with `zest` or not:
 
 Works on:
 
@@ -62,12 +63,12 @@ Works on:
 
 ### Compatibility requirements
 
-How to make sure `solime` works for your program:
+How to make sure `zest` works for your program:
 
-1. Make sure you're using a Rust framework ([solana-program-test](https://crates.io/crates/solana-program-test) or similar, like [liteSVM](https://github.com/LiteSVM/litesvm)) for your testing purposes
-2. Make sure your tests are runnable by just `cargo test`
+1. Make sure you're using a Rust framework ([solana-program-test](https://crates.io/crates/solana-program-test) or similar, like [liteSVM](https://github.com/LiteSVM/litesvm)) for your testing purposes
+2. Make sure your tests are runnable by just `cargo test`
     
-    This is done by supplying your program's `processor` (the `process_instruction` function) directly when adding it to the test validator 
+    This is done by supplying your program's `processor` (the `process_instruction` function) directly when adding it to the test validator 
     
     ```rust
     let mut validator = ProgramTest::default();
@@ -78,10 +79,10 @@ How to make sure `solime` works for your program:
     );
     ```
     
-    That requirement is incompatible with `shank` framework, since it puts a type constraint on the `processor` function. 
+    That requirement is incompatible with `shank` framework, since it puts a type constraint on the `processor` function. 
 
 > [!NOTE]
-> That happens because of the `context` function from [`ShankContext`](https://docs.rs/shank/0.4.2/shank/derive.ShankContext.html), seen in their [example](https://docs.rs/shank/0.4.2/shank/derive.ShankContext.html#example) (the `'a` lifetime), which breaks the compatibility (and thus makes it testable only in *`sbf` mode*).
+> That happens because of the `context` function from [`ShankContext`](https://docs.rs/shank/0.4.2/shank/derive.ShankContext.html), seen in their [example](https://docs.rs/shank/0.4.2/shank/derive.ShankContext.html#example) (the `'a` lifetime), which breaks the compatibility (and thus makes it testable only in *`sbf` mode*).
 
 ## Branch coverage
 
