@@ -69,9 +69,9 @@ How to make sure `zest` works for your program:
 
 1. Make sure you're using a Rust framework ([solana-program-test](https://crates.io/crates/solana-program-test) or similar, like [liteSVM](https://github.com/LiteSVM/litesvm)) for your testing purposes
 2. Make sure your tests are runnable by just `cargo test`
-    
-    This is done by supplying your program's `processor` (the `process_instruction` function) directly when adding it to the test validator 
-    
+
+    This is done by supplying your program's `processor` (the `process_instruction` function) directly when adding it to the test validator
+
     ```rust
     let mut validator = ProgramTest::default();
     validator.add_program(
@@ -80,8 +80,8 @@ How to make sure `zest` works for your program:
         processor!(counter_solana_native::process_instruction),
     );
     ```
-    
-    That requirement is incompatible with `shank` framework, since it puts a type constraint on the `processor` function. 
+
+    That requirement is incompatible with `shank` framework, since it puts a type constraint on the `processor` function.
 
 > [!NOTE]
 > That happens because of the `context` function from [`ShankContext`](https://docs.rs/shank/0.4.2/shank/derive.ShankContext.html), seen in their [example](https://docs.rs/shank/0.4.2/shank/derive.ShankContext.html#example) (the `'a` lifetime), which breaks the compatibility (and thus makes it testable only in *`sbf` mode*).
