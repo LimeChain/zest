@@ -1,5 +1,7 @@
 # Zest
 
+![Logo](./assets/logo.svg)
+
 Solana Code Coverage CLI Tool
 
 ## Demo screenshot
