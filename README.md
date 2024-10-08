@@ -2,13 +2,13 @@
 
 ![Logo](./assets/logo.svg)
 
-Solana Code Coverage CLI Tool
+Zest is a code coverage CLI tool for Solana programs. Zest is built by LimeChain, a blockchain development and consulting firm founded in 2017. The development of the tool is supported by a grant from the Solana Foundation. 
 
 ## Demo screenshot
 
 ![image](https://github.com/user-attachments/assets/e2cc4dd9-e288-43f3-8378-a935496c2821)
 
-## Installtion
+## Install
 
 ```bash
 # Clone repo
@@ -111,3 +111,7 @@ How to make sure `zest` works for your program:
 
   **TLDR**: we either chose to support `branch` coverage or the ability to compile solana programs (IMO the second is a far more important requirement)
 </details>
+
+## Contact
+
+For feedback, feature requests or general inquiries, please reach out to zest@limechain.tech
