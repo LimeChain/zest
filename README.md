@@ -34,6 +34,7 @@ zest cov --path ./examples/setter/anchor
 cat <<TOML > my_zest_config.toml
 path = "./examples/setter/anchor"
 branch = true
+# contract_style = "anchor"
 # tests = ["integration"]
 # output_types = ["lcov", "html"]
 TOML
