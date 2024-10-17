@@ -78,10 +78,38 @@ pub struct Config {
     )]
     #[default(vec![OutputType::Html])]
     pub output_types: Vec<OutputType>,
+
+    #[arg(
+        long = "contract-style",
+        value_name = "CONTRACT_STYLE",
+        value_enum,
+        help = "Style of contract
+    )]
+    #[default(ContractStyle::Anchor)]
+    pub contract_style: ContractStyle,
 }
 
 impl ConfigFileName for Config {
     const NAME: &'static str = "coverage";
+}
+
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    Hash,
+    PartialEq,
+    Eq,
+    Default,
+    ValueEnum,
+    Serialize,
+    Deserialize,
+)]
+#[serde(rename_all = "snake_case")]
+pub enum ContractStyle {
+    #[default]
+    Anchor,
+    Native,
 }
 
 #[derive(
@@ -140,6 +168,7 @@ pub fn run(config: Config) -> eyre::Result<()> {
         tests,
         skips,
         output_types,
+        contract_style,
     } = config;
 
     // Check the conditions after parsing
@@ -405,6 +434,7 @@ pub fn run(config: Config) -> eyre::Result<()> {
             excl_br_start: None,
             excl_br_stop: None,
             no_demangle: false,
+            contract_style,
         };
 
         from_grcov::main(opt)?;

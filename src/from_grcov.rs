@@ -23,6 +23,8 @@ use std::{process, thread};
 
 use grcov::*;
 
+use crate::coverage::ContractStyle;
+
 #[derive(Clone, PartialEq, Eq, Hash, Debug)]
 pub enum OutputType {
     Ade,
@@ -299,6 +301,9 @@ pub struct Opt {
     /// No symbol demangling.
     #[arg(long)]
     pub no_demangle: bool,
+    /// Style of contact
+    #[arg(long)]
+    pub contract_style: ContractStyle,
 }
 
 pub fn main(opt: Opt) -> eyre::Result<()> {
@@ -521,8 +526,15 @@ pub fn main(opt: Opt) -> eyre::Result<()> {
                         FUNCTION_QUERY,
                     };
 
+                    let query: &tree_sitter::Query = match opt.contract_style {
+                        ContractStyle::Anchor => {
+                            &FUNCTION_IN_PROGRAM_MODULE_QUERY
+                        }
+                        ContractStyle::Native => &FUNCTION_QUERY,
+                    };
+
                     let source_contract_functions =
-                        extract_functions(&path, &FUNCTION_QUERY)?;
+                        extract_functions(&path, query)?;
 
                     let functions: HashMap<String, Function, _> =
                         source_contract_functions
