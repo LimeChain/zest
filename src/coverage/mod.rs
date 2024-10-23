@@ -83,7 +83,7 @@ pub struct Config {
         long = "contract-style",
         value_name = "CONTRACT_STYLE",
         value_enum,
-        help = "Style of contract
+        help = "Style of contract",
     )]
     #[default(ContractStyle::Anchor)]
     pub contract_style: ContractStyle,
