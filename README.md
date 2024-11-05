@@ -25,10 +25,10 @@ cargo install --path .
 # Move into the target project
 cd ./examples/setter/anchor
 # This will run coverage for the example using the `instrument-coverage` strategy without `branch` info
-zest
+zest coverage
 
 # Path to the target project can also be specified using the `--path` option
-zest cov --path ./examples/setter/anchor
+zest coverage --path ./examples/setter/anchor
 
 # Configuration options can also be read from a (TOML) config file (`zest-coverage.toml` by default)
 cat <<TOML > my_zest_config.toml
@@ -43,7 +43,7 @@ TOML
 #  `coverage_strategy` being `instrument-coverage`       (Default)
 #               `path` being `./examples/setter/anchor/` (from config file)
 #             `branch` being `false`                     (CLI override)
-zest cov --config ./my_zest_config.toml --branch false
+zest coverage --config ./my_zest_config.toml --branch false
 ```
 
 > [!NOTE]
