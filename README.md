@@ -11,12 +11,7 @@ Zest is a code coverage CLI tool for Solana programs. Zest is built by LimeChain
 ## Install
 
 ```bash
-# Clone repo
-git clone https://github.com/LimeChain/zest
-cd zest
-
-# Install globally as `zest`
-cargo install --path .
+cargo install --git https://github.com/LimeChain/zest zest --force
 ```
 
 ## Usage
