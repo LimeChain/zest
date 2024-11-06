@@ -6,7 +6,7 @@ use clap_serde_derive::{
 };
 
 /// Wrap a `Config` with an optional config file
-#[derive(Parser)]
+#[derive(Default, Parser)]
 #[command(version, about)]
 pub struct WithConfigFile<Config>
 where

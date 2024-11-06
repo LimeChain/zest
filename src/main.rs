@@ -8,7 +8,7 @@ use zest::{
 
 fn main() -> eyre::Result<()> {
     let Config { command } = Config::parse();
-    match command {
+    match command.unwrap_or(Subcommands::Coverage(Default::default())) {
         Subcommands::Coverage(config) => {
             let config = coverage::Config::parse_with_config_file(Some(config))?;
 

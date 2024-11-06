@@ -4,9 +4,10 @@ use clap_serde_derive::clap;
 use crate::{config_parsing::WithConfigFile, coverage, generate};
 
 #[derive(Parser)]
+#[command(version, about)]
 pub struct Config {
     #[command(subcommand)]
-    pub command: Subcommands,
+    pub command: Option<Subcommands>,
 }
 
 #[derive(Parser)]
