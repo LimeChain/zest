@@ -23,17 +23,15 @@ pub fn is_rustup_managed() -> bool {
 }
 
 pub fn install_llvm_tools(
-    compiler_version: impl AsRef<str>
+    compiler_version: Option<impl AsRef<str>>
 ) -> eyre::Result<()> {
     let mut spinner =
         Spinner::new(Spinners::Dots, "Installing toolchain (with `llvm-tools-preview` component)...".to_string());
     let cmd = Command::new("rustup")
-        .arg("toolchain")
-        .arg("install")
-        .arg("--no-self-update")
-        .args(["--profile", "minimal"])
-        .arg(compiler_version.as_ref())
-        .args(["--component", "llvm-tools-preview"])
+        .args(compiler_version.map(|cv| format!("+{}", cv.as_ref())))
+        .arg("component")
+        .arg("add")
+        .arg("llvm-tools-preview")
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .spawn()?;

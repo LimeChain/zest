@@ -196,10 +196,7 @@ pub fn run(config: Config) -> eyre::Result<()> {
     env::set_current_dir(&path)
         .with_context(|| format!("Could not `cd` to `{}`", path.display()))?;
 
-    // TODO: parse from target-dir's `rust-toolchain.toml`
-    install_llvm_tools(
-        compiler_version.as_ref().unwrap_or(&"stable".to_string()),
-    )?;
+    install_llvm_tools(compiler_version.as_ref())?;
 
     let target_dir = "./target";
     let coverage_dir = "./target/coverage";
