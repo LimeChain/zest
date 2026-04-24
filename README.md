@@ -1,5 +1,10 @@
 # Zest
 
+> [!WARNING]
+> **This repository is deprecated and no longer maintained.**
+>
+> Development has moved to [**limechain/sbpf-coverage**](https://github.com/LimeChain/sbpf-coverage), which maps SBPF execution traces to source code for test coverage and trace disassembly of Solana programs. Please use that repository going forward.
+
 ![Logo](./assets/logo.svg)
 
 Zest is a code coverage CLI tool for Solana programs. Zest is built by LimeChain, a blockchain development and consulting firm founded in 2017. The development of the tool is supported by a grant from the Solana Foundation. 
